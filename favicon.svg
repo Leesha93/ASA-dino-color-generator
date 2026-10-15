@@ -1,23 +1,59 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Ciemne, zaokrąglone tło dopasowane do motywu -->
-  <rect width="64" height="64" rx="14" fill="#141414" stroke="#f59e0b" stroke-width="2.5"/>
-  
-  <!-- Stylizowany dinozaur z ciepłym bursztynowo-złotym gradientem -->
   <defs>
-    <linearGradient id="dinoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="tRexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#fbbf24"/>
       <stop offset="100%" stop-color="#ea580c"/>
     </linearGradient>
   </defs>
 
-  <!-- Sylwetka T-Rexa / Raptor / Dino z grzebieniem -->
-  <path d="M48 10 C44 10 37 13 35 17 C34 19 32 20 29 20 C25 20 23 23 23 27 C23 29 20 31 18 33 C14 36 11 41 11 46 C11 49 14 52 18 52 C21 52 23 49 25 46 C27 43 30 42 34 43 L33 54 L39 54 L41 46 C44 47 47 46 49 44 L51 54 L57 54 L56 42 C57 37 57 32 55 27 C56 25 57 20 56 16 C55 12 52 10 48 10 Z" fill="url(#dinoGrad)"/>
+  <!-- Ciemne tło favicony -->
+  <rect width="64" height="64" rx="14" fill="#141414" stroke="#f59e0b" stroke-width="2.5"/>
 
-  <!-- Oko dinozaura -->
-  <circle cx="48" cy="18" r="2.2" fill="#141414"/>
+  <!-- Wyrazista sylwetka T-Rexa z otwartą paszczą i zębami -->
+  <!-- Głowa, szczęka, szyja, grzbiet, ogon, łapy -->
+  <path d="
+    M 38 12 
+    L 54 12 
+    L 55 21 
+    L 45 22 
+    L 41 24 
+    L 53 25 
+    L 50 30 
+    L 39 28 
+    L 37 34 
+    L 34 37 
+    L 35 41 
+    L 32 41 
+    L 31 38 
+    L 28 41 
+    L 26 47 
+    L 31 53 
+    L 28 55 
+    L 22 55 
+    L 21 47 
+    L 17 45 
+    L 12 47 
+    L 8 47 
+    L 11 41 
+    L 16 38 
+    L 20 33 
+    L 24 28 
+    L 26 23 
+    L 30 18 
+    Z" 
+    fill="url(#tRexGrad)" 
+  />
 
-  <!-- Kolorowe punkty symbolizujące regiony/barwy -->
-  <circle cx="16" cy="18" r="4" fill="#00d26a" stroke="#141414" stroke-width="1.5"/>
-  <circle cx="23" cy="12" r="3.5" fill="#00a8ff" stroke="#141414" stroke-width="1.5"/>
-  <circle cx="12" cy="27" r="3.5" fill="#f43f5e" stroke="#141414" stroke-width="1.5"/>
+  <!-- Zęby w paszczy -->
+  <polygon points="46,22 48,22 47,24" fill="#ffffff" />
+  <polygon points="50,22 52,22 51,24" fill="#ffffff" />
+
+  <!-- Oko T-Rexa -->
+  <circle cx="42" cy="16" r="2" fill="#141414" />
+  <circle cx="42.5" cy="15.5" r="0.7" fill="#ffffff" />
+
+  <!-- Trzy wyraziste plamki kolorów / regionów -->
+  <circle cx="16" cy="15" r="3.5" fill="#00d26a" />
+  <circle cx="23" cy="10" r="3" fill="#00a8ff" />
+  <circle cx="12" cy="23" r="2.8" fill="#f43f5e" />
 </svg>
