@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARK Dino Color Generator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="header">
+      <div class="logo-area">
+        <h1>🦖 ARK Color Generator </h1>
+        <p class="subtitle">Generator kolorów dinozaurów i komend do ARK Survival Ascended</p>
+      </div>
+      <div class="header-actions">
+        <button id="btn-save-fav" class="btn btn-favorite">⭐ Zapisz zestaw </button>
+        <button id="btn-open-library" class="btn btn-secondary">📚 Historia i Zapisane (<span id="library-count">0</span>)</button>
+        <button id="btn-random-all" class="btn btn-primary">🎲 Losuj wszystkie </button>
+        <button id="btn-reset-all" class="btn btn-secondary">🔄 Wyczyść </button>
+      </div>
+    </header>
+
+    <!-- Pasek podglądu 6 regionów -->
+    <section class="preview-section">
+      <div class="region-preview-bar" id="preview-bar">
+        <!-- Renderowane przez JS: 6 kafelków regionów -->
+      </div>
+    </section>
+
+    <!-- Sekcja wygenerowanych komend -->
+    <section class="commands-section">
+      <div class="command-card">
+        <div class="command-header">
+          <div>
+            <h3>Konsola Admina / Cheat</h3>
+            <span class="cmd-desc">Dla administratorów serwera lub trybu singleplayer</span>
+          </div>
+          <button class="btn btn-sm btn-copy" data-target="admin-cmd">📋 Kopiuj</button>
+        </div>
+        <div class="command-box">
+          <code id="admin-cmd">cheat settargetdinocolor 0 1 | ...</code>
+        </div>
+      </div>
+
+      <div class="command-card">
+        <div class="command-header">
+          <div>
+            <h3>Komenda Czatu / Plugin</h3>
+            <span class="cmd-desc">Format serwerowy /color dla włączonych pluginów</span>
+          </div>
+          <button class="btn btn-sm btn-copy" data-target="chat-cmd">📋 Kopiuj</button>
+        </div>
+        <div class="command-box">
+          <code id="chat-cmd">/color 0 0 0 0 0 0</code>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sekcja filtrów losowania barw -->
+    <section class="filters-section">
+      <div class="filters-header">
+        <div class="filters-title-group">
+          <span class="filters-icon">🎨</span>
+          <strong>Grupy kolorów do losowania:</strong>
+          <span class="filters-count-info" id="filters-pool-info">(pula: 227 kolorów)</span>
+        </div>
+        <div class="preset-buttons">
+          <span class="preset-label">Presety:</span>
+          <button class="preset-chip" data-preset="all">🌈 Wszystkie</button>
+          <button class="preset-chip" data-preset="fav-colors">⭐ Moje Kolory</button>
+          <button class="preset-chip" data-preset="black-red">🔴⚫ Krwawy Cień</button>
+          <button class="preset-chip" data-preset="camo">🌿🟤 Kamuflaż</button>
+          <button class="preset-chip" data-preset="ice">❄️ Zimowy</button>
+          <button class="preset-chip" data-preset="cyber">👾 Cyber / Neon</button>
+          <button class="preset-chip" data-preset="pastel">🍭 Pastele</button>
+        </div>
+      </div>
+
+      <div class="filter-chips-grid" id="filter-chips-grid">
+        <!-- Generowane dynamicznie tagi kolorów -->
+      </div>
+    </section>
+
+    <!-- Karty wyboru regionów 0 - 5 -->
+    <section class="regions-grid" id="regions-grid">
+      <!-- Renderowane dynamicznie 6 slotów regionów -->
+    </section>
+  </div>
+
+  <!-- Modal wyboru koloru -->
+  <div class="modal-overlay" id="color-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title">Wybierz kolor dla Regionu 0</h3>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <div class="modal-search">
+        <input type="text" id="color-search" placeholder="Szukaj po nazwie lub ID (np. Red, Blue, 12)..." autofocus>
+      </div>
+      <div class="modal-category-filters" id="modal-category-filters">
+        <!-- Generowane tagi filtrów w oknie wyboru -->
+      </div>
+      <div class="color-palette-grid" id="modal-palette">
+        <!-- Kafelki 227 kolorów generowane z colors.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Historii i Ulubionych -->
+  <div class="modal-overlay" id="library-modal">
+    <div class="modal-content modal-content-wide">
+      <div class="modal-header">
+        <div class="library-tabs">
+          <button class="tab-btn active" data-tab="favorites">⭐ Zapisane (<span id="fav-count">0</span>)</button>
+          <button class="tab-btn" data-tab="history">🕒 Historia (<span id="hist-count">0</span>)</button>
+        </div>
+        <button class="modal-close" id="library-modal-close">&times;</button>
+      </div>
+      <div class="library-body">
+        <div class="library-actions-bar">
+          <span class="lib-info-text" id="lib-info-text">Zapisane przez Ciebie kompozycje kolorów</span>
+          <button class="btn btn-secondary btn-sm" id="btn-clear-tab">🗑️ Wyczyść tę listę</button>
+        </div>
+        <div class="library-list" id="library-list">
+          <!-- Renderowane dynamicznie kafelki zestawów -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal nadania nazwy przy zapisywaniu do ulubionych -->
+  <div class="modal-overlay" id="save-name-modal">
+    <div class="modal-content modal-content-small">
+      <div class="modal-header">
+        <h3>⭐ Zapisz zestaw</h3>
+        <button class="modal-close" id="save-modal-close">&times;</button>
+      </div>
+      <div class="modal-form">
+        <label for="set-name-input">Podaj nazwę zestawu (np. Rex Neon, Spino Midnight):</label>
+        <input type="text" id="set-name-input" placeholder="Moja kompozycja..." maxlength="35">
+        <div class="form-actions">
+          <button class="btn btn-primary" id="btn-confirm-save">Zapisz</button>
+          <button class="btn btn-secondary" id="btn-cancel-save">Anuluj</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast powiadomienie o skopiowaniu -->
+  <div class="toast" id="toast">Skopiowano do schowka!</div>
+
+  <script src="colors.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

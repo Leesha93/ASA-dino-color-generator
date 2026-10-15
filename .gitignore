@@ -1,0 +1,6 @@
+# Pliki tymczasowe i arkusz roboczy
+*.xlsx
+*.pyc
+__pycache__/
+.vscode/
+.idea/
