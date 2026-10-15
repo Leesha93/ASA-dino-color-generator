@@ -1,6 +1,21 @@
-# Pliki tymczasowe i arkusz roboczy
+# Pliki arkusza roboczego i bazy pomocnicze
 *.xlsx
+*.xls
+*tagged.json
+
+# Pliki środowiskowe i tymczasowe
 *.pyc
 __pycache__/
+*.tmp
+*.log
+
+# Środowiska IDE
 .vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace
+
+# Systemowe pliki operacyjne
+Thumbs.db
+Desktop.ini
+.DS_Store
