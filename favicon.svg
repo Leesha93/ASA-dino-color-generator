@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Ciemne, zaokrąglone tło dopasowane do motywu -->
+  <rect width="64" height="64" rx="14" fill="#141414" stroke="#f59e0b" stroke-width="2.5"/>
+  
+  <!-- Stylizowany dinozaur z ciepłym bursztynowo-złotym gradientem -->
+  <defs>
+    <linearGradient id="dinoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Sylwetka T-Rexa / Raptor / Dino z grzebieniem -->
+  <path d="M48 10 C44 10 37 13 35 17 C34 19 32 20 29 20 C25 20 23 23 23 27 C23 29 20 31 18 33 C14 36 11 41 11 46 C11 49 14 52 18 52 C21 52 23 49 25 46 C27 43 30 42 34 43 L33 54 L39 54 L41 46 C44 47 47 46 49 44 L51 54 L57 54 L56 42 C57 37 57 32 55 27 C56 25 57 20 56 16 C55 12 52 10 48 10 Z" fill="url(#dinoGrad)"/>
+
+  <!-- Oko dinozaura -->
+  <circle cx="48" cy="18" r="2.2" fill="#141414"/>
+
+  <!-- Kolorowe punkty symbolizujące regiony/barwy -->
+  <circle cx="16" cy="18" r="4" fill="#00d26a" stroke="#141414" stroke-width="1.5"/>
+  <circle cx="23" cy="12" r="3.5" fill="#00a8ff" stroke="#141414" stroke-width="1.5"/>
+  <circle cx="12" cy="27" r="3.5" fill="#f43f5e" stroke="#141414" stroke-width="1.5"/>
+</svg>
