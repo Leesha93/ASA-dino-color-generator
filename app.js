@@ -24,18 +24,25 @@ const PRESETS = {
   "pastel": ["pastelowe", "rozowe", "biale"]
 };
 
+// Stały domyślny zestaw kolorów (Region 0: kolor ID 6, Regiony 1-5: kolory ID 1-5)
+const DEFAULT_COLOR_IDS = [6, 1, 2, 3, 4, 5];
+
+function getColorById(id) {
+  return ARK_COLORS.find(c => c.id === id) || ARK_COLORS[0];
+}
+
 // Stan aplikacji: 6 regionów (0 - 5) + aktywne filtry losowania
 const state = {
   activeModalRegion: null,
   activeFilters: new Set(), // jeśli puste -> cała baza 227 kolorów
   modalFilter: null, // pojedynczy filtr w modalu
   regions: [
-    { regionIndex: 0, color: ARK_COLORS[0], enabled: true },
-    { regionIndex: 1, color: ARK_COLORS[1], enabled: true },
-    { regionIndex: 2, color: ARK_COLORS[2], enabled: true },
-    { regionIndex: 3, color: ARK_COLORS[3], enabled: true },
-    { regionIndex: 4, color: ARK_COLORS[4], enabled: true },
-    { regionIndex: 5, color: ARK_COLORS[5], enabled: true }
+    { regionIndex: 0, color: getColorById(6), enabled: true },
+    { regionIndex: 1, color: getColorById(1), enabled: true },
+    { regionIndex: 2, color: getColorById(2), enabled: true },
+    { regionIndex: 3, color: getColorById(3), enabled: true },
+    { regionIndex: 4, color: getColorById(4), enabled: true },
+    { regionIndex: 5, color: getColorById(5), enabled: true }
   ]
 };
 
@@ -565,13 +572,15 @@ function randomizeAll() {
   updateAll(true);
 }
 
-// Resetowanie do domyślnych
+// Resetowanie do domyślnych (stały zestaw: 6 1 2 3 4 5)
 function resetAll() {
   state.regions.forEach((r, idx) => {
-    r.color = ARK_COLORS[idx % ARK_COLORS.length];
+    const targetId = DEFAULT_COLOR_IDS[idx];
+    r.color = getColorById(targetId);
     r.enabled = true;
   });
   updateAll(true);
+  showToast("Przywrócono domyślny zestaw kolorów (6, 1, 2, 3, 4, 5)!");
 }
 
 // Zbiorcza aktualizacja interfejsu (z opcją zapisu do historii)
