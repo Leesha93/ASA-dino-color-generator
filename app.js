@@ -526,13 +526,7 @@ function updateFilterPoolInfo() {
   const pool = getFilteredColorPool();
   const info = document.getElementById("filters-pool-info");
   if (info) {
-    if (state.favOnlyMode) {
-      info.textContent = `(pula: Twoje ulubione kolory - ${pool.length})`;
-    } else if (state.activeFilters.size === 0) {
-      info.textContent = `(pula: wszystkie ${pool.length} kolorów)`;
-    } else {
-      info.textContent = `(aktywna pula: ${pool.length} kolorów)`;
-    }
+    info.textContent = `(pula: ${pool.length} kolorów)`;
   }
 }
 
