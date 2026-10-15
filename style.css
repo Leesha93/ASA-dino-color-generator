@@ -292,6 +292,14 @@ body {
   background: #1f232b;
 }
 
+.preset-chip.active {
+  background: rgba(245, 158, 11, 0.22);
+  border-color: var(--primary);
+  color: #fbbf24;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+}
+
 .filter-chips-grid {
   display: flex;
   flex-wrap: wrap;

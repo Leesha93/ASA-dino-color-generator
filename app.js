@@ -35,6 +35,8 @@ function getColorById(id) {
 const state = {
   activeModalRegion: null,
   activeFilters: new Set(), // jeśli puste -> cała baza 227 kolorów
+  activePreset: "all",      // aktualnie wybrany preset
+  favOnlyMode: false,
   modalFilter: null, // pojedynczy filtr w modalu
   regions: [
     { regionIndex: 0, color: getColorById(6), enabled: true },
@@ -482,11 +484,14 @@ function renderFilterChips() {
     `;
 
     chip.addEventListener("click", () => {
+      state.favOnlyMode = false;
       if (state.activeFilters.has(cat.key)) {
         state.activeFilters.delete(cat.key);
       } else {
         state.activeFilters.add(cat.key);
       }
+      // Sprawdź czy pasuje do jakiegoś presetu
+      detectActivePreset();
       updateFilterUI();
     });
 
@@ -494,6 +499,26 @@ function renderFilterChips() {
   });
 
   updateFilterPoolInfo();
+}
+
+// Wykryj czy bieżący zestaw filtrów odpowiada któremuś presetowi
+function detectActivePreset() {
+  if (state.favOnlyMode) {
+    state.activePreset = "fav-colors";
+    return;
+  }
+  if (state.activeFilters.size === 0) {
+    state.activePreset = "all";
+    return;
+  }
+  for (const [key, list] of Object.entries(PRESETS)) {
+    if (key === "all") continue;
+    if (list.length === state.activeFilters.size && list.every(c => state.activeFilters.has(c))) {
+      state.activePreset = key;
+      return;
+    }
+  }
+  state.activePreset = null; // ręczny zestaw użytkownika
 }
 
 // Aktualizacja informacji o rozmiarze puli
@@ -513,12 +538,20 @@ function updateFilterPoolInfo() {
 
 // Aktualizacja stanu chipów i puli
 function updateFilterUI() {
+  // Aktualizuj kafelki poszczególnych kategorii
   const chips = document.querySelectorAll("#filter-chips-grid .filter-chip");
   COLOR_CATEGORIES.forEach((cat, idx) => {
     if (chips[idx]) {
       chips[idx].classList.toggle("active", !state.favOnlyMode && state.activeFilters.has(cat.key));
     }
   });
+
+  // Aktualizuj podświetlenie przycisków presetów
+  document.querySelectorAll(".preset-chip").forEach(btn => {
+    const isAct = btn.dataset.preset === state.activePreset;
+    btn.classList.toggle("active", isAct);
+  });
+
   updateFilterPoolInfo();
 }
 
@@ -533,6 +566,7 @@ document.querySelectorAll(".preset-chip").forEach(btn => {
         return;
       }
       state.favOnlyMode = true;
+      state.activePreset = "fav-colors";
       state.activeFilters.clear();
       updateFilterUI();
       showToast("Losowanie wyłącznie z Twoich ulubionych kolorów ⭐");
@@ -540,6 +574,7 @@ document.querySelectorAll(".preset-chip").forEach(btn => {
     }
 
     state.favOnlyMode = false;
+    state.activePreset = presetKey;
     const categories = PRESETS[presetKey] || [];
     state.activeFilters = new Set(categories);
     updateFilterUI();
