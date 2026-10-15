@@ -48,11 +48,23 @@ body {
   border-bottom: 1px solid var(--border-color);
 }
 
-.logo-area h1 {
+.logo-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-size: 1.8rem;
   font-weight: 700;
   color: #fff;
   letter-spacing: -0.5px;
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .subtitle {
@@ -844,4 +856,15 @@ body {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+/* Subtelny podpis na dole strony */
+.app-footer {
+  text-align: center;
+  padding: 24px 0 12px;
+  color: #555555;
+  font-size: 0.8rem;
+  letter-spacing: 0.3px;
+  border-top: 1px solid #1f1f1f;
+  margin-top: 12px;
 }
