@@ -20,21 +20,16 @@ Aplikacja jest przystosowana do darmowego hostowania na **GitHub Pages**.
 
 ---
 
-## 🚀 Jak uruchomić na GitHub Pages?
+## 🚀 Wersja Live
 
-1. Utwórz nowe repozytorium na swoim koncie **GitHub** (np. `ark-color-generator`).
-2. Prześlij pliki z tego folderu do repozytorium:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit - ARK Color Generator"
-   git branch -M main
-   git remote add origin https://github.com/<twój-login>/<twoje-repo>.git
-   git push -u origin main
-   ```
-3. W ustawieniach repozytorium na GitHubie:
-   - Przejdź do zakładki **Settings** -> **Pages**.
-   - W sekcji **Branch** wybierz gałąź `main` i katalog `/ (root)`.
-   - Kliknij **Save**.
-4. Po minucie Twoja aplikacja będzie dostępna pod adresem:
-   `https://<twój-login>.github.io/<twoje-repo>/`
+Aplikacja jest dostępna online pod adresem:
+👉 **[https://leesha93.github.io/ASA-dino-color-generator/](https://leesha93.github.io/ASA-dino-color-generator/)**
+
+---
+
+## 🎮 Jak korzystać?
+
+1. Wybierz barwy ręcznie dla regionów 0–5 lub użyj przycisku **🎲 Losuj wszystkie**.
+2. Skorzystaj z filtrów kategorii barw na górze strony (lub gotowych presetów), aby zawęzić losowanie do pożądanych odcieni.
+3. Kliknij **📋 Kopiuj** przy gotowej komendzie admina lub pluginu, by wkleić ją w grze.
+4. Zapisuj swoje ulubione kompozycje przyciskiem **⭐ Zapisz zestaw** i przeglądaj historię w panelu **📚 Historia i Ulubione**.
