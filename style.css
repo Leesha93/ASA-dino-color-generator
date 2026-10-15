@@ -59,12 +59,10 @@ body {
 }
 
 .logo-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  object-fit: cover;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(245, 158, 11, 0.35));
 }
 
 .subtitle {
@@ -862,9 +860,10 @@ body {
 .app-footer {
   text-align: center;
   padding: 24px 0 12px;
-  color: #555555;
-  font-size: 0.8rem;
-  letter-spacing: 0.3px;
-  border-top: 1px solid #1f1f1f;
+  color: #383e47;
+  font-size: 0.75rem;
+  letter-spacing: 0.4px;
+  border-top: 1px solid #1a1c21;
   margin-top: 12px;
+  user-select: none;
 }
