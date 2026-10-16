@@ -74,13 +74,26 @@ body {
 .header-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 16px;
   align-items: center;
+  justify-content: space-between;
   flex-grow: 1;
 }
 
-#btn-random-all {
+.header-actions-left {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.header-actions-right {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
   margin-left: auto;
+  justify-content: flex-end;
 }
 
 /* Przyciski */
