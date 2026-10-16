@@ -76,6 +76,11 @@ body {
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
+  flex-grow: 1;
+}
+
+#btn-random-all {
+  margin-left: auto;
 }
 
 /* Przyciski */
