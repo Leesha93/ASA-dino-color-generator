@@ -321,6 +321,8 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .filters-title-group {
@@ -334,22 +336,85 @@ body {
   font-size: 1.2rem;
 }
 
-.filters-count-info {
-  color: var(--text-muted);
+.filters-count-info-btn {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 20px;
+  padding: 4px 10px;
+  color: #fbbf24;
+  font-weight: 700;
   font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  user-select: none;
 }
 
-.preset-buttons {
+.filters-count-info-btn:hover {
+  background: rgba(245, 158, 11, 0.25);
+  border-color: #fbbf24;
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+}
+
+.pool-btn-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.filters-count-info-btn:hover .pool-btn-hint {
+  color: #fff;
+}
+
+.primary-presets {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.primary-presets .preset-chip {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.presets-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.preset-group-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.preset-group-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
   gap: 6px;
 }
 
-.preset-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin-right: 2px;
+.preset-chips-wrap {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
 }
 
 .preset-chip {
@@ -357,16 +422,18 @@ body {
   border: 1px solid var(--border-color);
   color: var(--text-main);
   border-radius: 20px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
+  user-select: none;
 }
 
 .preset-chip:hover {
   border-color: var(--primary);
   background: #1f232b;
+  transform: translateY(-1px);
 }
 
 .preset-chip.active {
@@ -375,6 +442,21 @@ body {
   color: #fbbf24;
   font-weight: 700;
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+}
+
+.filter-tags-wrapper {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-tags-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .filter-chips-grid {
@@ -1007,4 +1089,87 @@ body {
   border-top: 1px solid #1a1c21;
   margin-top: 12px;
   user-select: none;
+}
+
+/* Style okna zarządzania pulą losowania */
+.pool-modal-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-weight: normal;
+}
+
+.pool-modal-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background: #0d0f14;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pool-stats-badge {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.pool-palette-grid {
+  padding: 16px 20px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  max-height: 60vh;
+}
+
+/* Przycisk X w rogu swatcha - identyczny rozmiar i pozycja jak gwiazdka w oknie wyboru */
+.pool-exclude-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  z-index: 2;
+}
+
+.pool-exclude-btn:hover {
+  transform: scale(1.15);
+  background: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+/* Stan wykluczonego kafelka */
+.pool-palette-item.is-excluded {
+  opacity: 0.4;
+  filter: grayscale(0.7);
+  border-style: dashed;
+  border-color: #ef4444;
+  background: #180e0e;
+}
+
+.pool-palette-item.is-excluded .palette-name {
+  text-decoration: line-through;
+  color: #ef4444;
+}
+
+.pool-exclude-btn.excluded {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
 }

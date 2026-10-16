@@ -15,14 +15,68 @@ const COLOR_CATEGORIES = [
   { key: "ciemne", label: "Ciemne", dot: "#1a1a24" }
 ];
 
-// Presety grup
-const PRESETS = {
-  "all": [], // puste = wszystkie
-  "black-red": ["czarne", "czerwone"],
-  "camo": ["zielone", "brazowe", "czarne"],
-  "ice": ["biale", "niebieskie", "szare"],
-  "cyber": ["czarne", "fioletowe", "niebieskie", "rozowe"],
-  "pastel": ["pastelowe", "rozowe", "biale"]
+// Oficjalne Eventy ARK z dokładnymi listami ID kolorów
+const EVENT_PRESETS = {
+  "event-winter": {
+    name: "Winter Wonderland",
+    ids: [79, 5, 68, 31, 93, 91, 30, 28, 45, 85, 86, 87, 88, 96, 95, 94, 69, 1, 3, 8, 12, 17, 19, 25, 26, 36, 55, 4]
+  },
+  "event-love": {
+    name: "Love Ascended / Evolved",
+    ids: [28, 51, 95, 96, 89, 90, 91, 69, 30, 67, 6, 68, 1, 17, 44, 88, 36, 55, 99, 85, 86, 87, 84, 19]
+  },
+  "event-easter": {
+    name: "Eggcellent Adventure",
+    ids: [6, 3, 7, 11, 10, 12, 4, 5, 60, 67, 68, 97, 93, 94, 95, 96, 99, 78, 75, 91, 19, 21, 23, 25, 28, 30, 34, 56, 48, 44, 49, 50, 66, 64, 40, 38]
+  },
+  "event-summer": {
+    name: "Summer Bash",
+    ids: [4, 11, 99, 94, 76, 60, 83, 84, 85, 78, 97, 10, 67, 12, 19, 36, 18, 79]
+  },
+  "event-fear": {
+    name: "Fear Ascended / Evolved",
+    ids: [69, 83, 80, 1, 75, 90, 89, 8, 31, 79, 3, 86, 14, 49]
+  },
+  "event-turkey": {
+    name: "Turkey Trial",
+    ids: [75, 72, 77, 71, 15, 9, 88, 69, 73, 1, 17, 20, 80, 82, 53, 54, 14, 33, 36]
+  }
+};
+
+// Selekcjonowane Style & Klimaty
+const STYLE_PRESETS = {
+  "style-alpha": {
+    name: "Alpha",
+    ids: [79, 224, 14, 225, 128, 226, 35, 129, 20, 17, 130, 227, 1, 12, 230, 231, 232, 18]
+  },
+  "style-cosmic": {
+    name: "Kosmos",
+    ids: [79, 80, 200, 184, 57, 193, 201, 69, 252, 93, 58, 178, 59, 179, 219, 204, 172, 232]
+  },
+  "style-dragon": {
+    name: "Smoczy Ogień",
+    ids: [224, 62, 226, 128, 136, 129, 17, 130, 71, 72, 138, 243, 1, 74, 75, 244, 245, 241]
+  },
+  "style-frost": {
+    name: "Nordycki Mróz",
+    ids: [56, 81, 29, 65, 251, 52, 185, 191, 51, 186, 66, 228, 188, 95, 189, 96, 231, 55]
+  },
+  "style-pastel": {
+    name: "Słodki Pastel",
+    ids: [89, 207, 223, 215, 49, 220, 222, 214, 206, 134, 188, 174, 254, 221, 213, 205, 173, 149]
+  },
+  "style-synthwave": {
+    name: "Synthwave",
+    ids: [192, 200, 201, 69, 194, 202, 210, 218, 219, 68, 73, 74, 211, 212, 75, 76, 245, 179]
+  },
+  "style-reef": {
+    name: "Rafa Koralowa",
+    ids: [192, 176, 92, 177, 250, 94, 187, 249, 183, 135, 74, 132, 76, 140, 180, 182, 141, 181]
+  },
+  "style-royal": {
+    name: "Królewski Ametyst",
+    ids: [216, 217, 209, 202, 31, 70, 218, 210, 203, 90, 91, 77, 245, 244, 67, 253, 133, 241]
+  }
 };
 
 // Stały domyślny zestaw kolorów (Region 0: kolor ID 6, Regiony 1-5: kolory ID 1-5)
@@ -32,12 +86,13 @@ function getColorById(id) {
   return ARK_COLORS.find(c => c.id === id) || ARK_COLORS[0];
 }
 
-// Stan aplikacji: 6 regionów (0 - 5) + aktywne filtry losowania
+// Stan aplikacji: 6 regionów (0 - 5) + aktywne filtry i presety losowania
 const state = {
   activeModalRegion: null,
-  activeFilters: new Set(), // jeśli puste -> cała baza 227 kolorów
-  activePreset: "all",      // aktualnie wybrany preset
+  activeFilters: new Set(), // wybrane tagi (np. czerwone, biale)
+  activePreset: "all",      // "all", "fav-colors", klucz z EVENT_PRESETS lub STYLE_PRESETS
   favOnlyMode: false,
+  excludedColorIds: new Set(), // kolory wykluczone przez użytkownika z losowania
   modalFilter: null, // pojedynczy filtr w modalu
   regions: [
     { regionIndex: 0, color: getColorById(6), enabled: true, locked: false },
@@ -185,7 +240,6 @@ function renderRegionsGrid() {
           reg.enabled = true;
           updateAll();
         } else {
-          // Jeśli nie znaleziono koloru o takim ID
           showToast(`Nie znaleziono koloru o ID: ${val}`);
           e.target.value = reg.color.id;
         }
@@ -520,18 +574,114 @@ document.getElementById("save-name-modal").addEventListener("click", (e) => {
   if (e.target.id === "save-name-modal") closeSaveNameModal();
 });
 
-// Pobierz bieżącą pulę kolorów na podstawie aktywnych filtrów
-function getFilteredColorPool() {
+// Pobierz pełną pulę wybraną filtrami i presetem (przed odjęciem wykluczeń)
+function getBaseSelectedPool() {
+  let basePool = ARK_COLORS;
+
   if (state.favOnlyMode) {
     const favs = getFavoriteColorIds();
-    return ARK_COLORS.filter(col => favs.has(col.id));
+    basePool = ARK_COLORS.filter(col => favs.has(col.id));
+  } else if (state.activePreset && state.activePreset !== "all") {
+    let presetObj = EVENT_PRESETS[state.activePreset] || STYLE_PRESETS[state.activePreset];
+    if (presetObj && Array.isArray(presetObj.ids)) {
+      const idSet = new Set(presetObj.ids);
+      basePool = ARK_COLORS.filter(col => idSet.has(col.id));
+    }
   }
-  if (state.activeFilters.size === 0) {
-    return ARK_COLORS;
+
+  // Jeśli użytkownik dodatkowo zaznaczył konkretne tagi odcieni, zawężamy bazową pulę
+  if (state.activeFilters.size > 0) {
+    basePool = basePool.filter(col => {
+      if (!col.tags) return false;
+      return col.tags.some(t => state.activeFilters.has(t));
+    });
   }
-  return ARK_COLORS.filter(col => {
-    if (!col.tags) return false;
-    return col.tags.some(t => state.activeFilters.has(t));
+
+  return basePool;
+}
+
+// Pobierz bieżącą ostateczną pulę kolorów do losowania (z odjęciem wykluczonych)
+function getFilteredColorPool() {
+  const base = getBaseSelectedPool();
+  if (state.excludedColorIds.size === 0) return base;
+  return base.filter(col => !state.excludedColorIds.has(col.id));
+}
+
+// Otwieranie i obsługa modalu zarządzania pulą
+function openPoolModal() {
+  const modal = document.getElementById("pool-modal");
+  if (!modal) return;
+  renderPoolModal();
+  modal.classList.add("active");
+}
+
+function closePoolModal() {
+  const modal = document.getElementById("pool-modal");
+  if (modal) modal.classList.remove("active");
+}
+
+function renderPoolModal() {
+  const grid = document.getElementById("pool-modal-grid");
+  const badge = document.getElementById("pool-stats-badge");
+  const subtitle = document.getElementById("pool-modal-subtitle");
+  if (!grid) return;
+
+  const fullPool = getBaseSelectedPool();
+  const activeCount = fullPool.filter(c => !state.excludedColorIds.has(c.id)).length;
+  const excludedInPool = fullPool.filter(c => state.excludedColorIds.has(c.id)).length;
+
+  let presetName = "Wszystkie kolory";
+  if (state.favOnlyMode) presetName = "Moje Ulubione";
+  else if (state.activePreset && EVENT_PRESETS[state.activePreset]) presetName = EVENT_PRESETS[state.activePreset].name;
+  else if (state.activePreset && STYLE_PRESETS[state.activePreset]) presetName = STYLE_PRESETS[state.activePreset].name;
+
+  if (subtitle) {
+    subtitle.textContent = `Aktywny preset: ${presetName}. Kliknij kafelek, aby go wykluczyć (❌) lub przywrócić do losowania.`;
+  }
+  if (badge) {
+    badge.textContent = `Aktywne: ${activeCount} / Wykluczone: ${excludedInPool}`;
+  }
+
+  grid.innerHTML = "";
+
+  if (fullPool.length === 0) {
+    grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px;">Brak kolorów w tej kombinacji filtrów!</div>`;
+    return;
+  }
+
+  fullPool.forEach(col => {
+    const isExcluded = state.excludedColorIds.has(col.id);
+    const item = document.createElement("div");
+    item.className = `palette-item pool-palette-item ${isExcluded ? "is-excluded" : ""}`;
+    item.title = isExcluded ? "Kliknij, aby PRZYWRÓCIĆ kolor do losowania" : "Kliknij, aby WYKLUCZYĆ kolor z losowania";
+
+    item.innerHTML = `
+      <div class="palette-swatch-wrapper">
+        <div class="palette-swatch" style="background-color: ${col.hex}"></div>
+        <button class="pool-exclude-btn ${isExcluded ? "excluded" : ""}" title="${isExcluded ? "Przywróć do puli" : "Wyklucz z puli"}">
+          ✕
+        </button>
+      </div>
+      <div class="palette-name" title="${col.name}">${col.name}</div>
+      <div class="palette-id">ID: ${col.id}</div>
+    `;
+
+    const toggleExclude = (e) => {
+      e.stopPropagation();
+      if (state.excludedColorIds.has(col.id)) {
+        state.excludedColorIds.delete(col.id);
+      } else {
+        state.excludedColorIds.add(col.id);
+      }
+      renderPoolModal();
+      updateFilterPoolInfo();
+    };
+
+    const btn = item.querySelector(".pool-exclude-btn");
+    btn.addEventListener("click", toggleExclude);
+    item.addEventListener("click", toggleExclude);
+
+    grid.appendChild(item);
   });
 }
 
@@ -542,7 +692,7 @@ function renderFilterChips() {
   container.innerHTML = "";
 
   COLOR_CATEGORIES.forEach(cat => {
-    // Policz ile kolorów ma dany tag
+    // Policz ile kolorów w ARK ma dany tag
     const count = ARK_COLORS.filter(c => c.tags && c.tags.includes(cat.key)).length;
     const isActive = state.activeFilters.has(cat.key);
 
@@ -555,14 +705,11 @@ function renderFilterChips() {
     `;
 
     chip.addEventListener("click", () => {
-      state.favOnlyMode = false;
       if (state.activeFilters.has(cat.key)) {
         state.activeFilters.delete(cat.key);
       } else {
         state.activeFilters.add(cat.key);
       }
-      // Sprawdź czy pasuje do jakiegoś presetu
-      detectActivePreset();
       updateFilterUI();
     });
 
@@ -572,32 +719,17 @@ function renderFilterChips() {
   updateFilterPoolInfo();
 }
 
-// Wykryj czy bieżący zestaw filtrów odpowiada któremuś presetowi
-function detectActivePreset() {
-  if (state.favOnlyMode) {
-    state.activePreset = "fav-colors";
-    return;
-  }
-  if (state.activeFilters.size === 0) {
-    state.activePreset = "all";
-    return;
-  }
-  for (const [key, list] of Object.entries(PRESETS)) {
-    if (key === "all") continue;
-    if (list.length === state.activeFilters.size && list.every(c => state.activeFilters.has(c))) {
-      state.activePreset = key;
-      return;
-    }
-  }
-  state.activePreset = null; // ręczny zestaw użytkownika
-}
-
 // Aktualizacja informacji o rozmiarze puli
 function updateFilterPoolInfo() {
   const pool = getFilteredColorPool();
   const info = document.getElementById("filters-pool-info");
   if (info) {
-    info.textContent = `(pula: ${pool.length} kolorów)`;
+    const exclCount = state.excludedColorIds.size;
+    if (exclCount > 0) {
+      info.textContent = `(pula: ${pool.length} kolorów, -${exclCount} wykl.)`;
+    } else {
+      info.textContent = `(pula: ${pool.length} kolorów)`;
+    }
   }
 }
 
@@ -607,7 +739,7 @@ function updateFilterUI() {
   const chips = document.querySelectorAll("#filter-chips-grid .filter-chip");
   COLOR_CATEGORIES.forEach((cat, idx) => {
     if (chips[idx]) {
-      chips[idx].classList.toggle("active", !state.favOnlyMode && state.activeFilters.has(cat.key));
+      chips[idx].classList.toggle("active", state.activeFilters.has(cat.key));
     }
   });
 
@@ -640,12 +772,42 @@ document.querySelectorAll(".preset-chip").forEach(btn => {
 
     state.favOnlyMode = false;
     state.activePreset = presetKey;
-    const categories = PRESETS[presetKey] || [];
-    state.activeFilters = new Set(categories);
+    if (presetKey === "all") {
+      state.activeFilters.clear();
+      state.excludedColorIds.clear();
+    }
     updateFilterUI();
     showToast(`Ustawiono preset: ${btn.textContent.trim()}`);
   });
 });
+
+// Obsługa otwierania i zamykania modalu puli
+const poolInfoBtn = document.getElementById("filters-pool-info-btn");
+if (poolInfoBtn) {
+  poolInfoBtn.addEventListener("click", openPoolModal);
+}
+
+const poolModalCloseBtn = document.getElementById("pool-modal-close");
+if (poolModalCloseBtn) {
+  poolModalCloseBtn.addEventListener("click", closePoolModal);
+}
+
+const poolModal = document.getElementById("pool-modal");
+if (poolModal) {
+  poolModal.addEventListener("click", (e) => {
+    if (e.target.id === "pool-modal") closePoolModal();
+  });
+}
+
+const btnResetExcluded = document.getElementById("btn-reset-excluded");
+if (btnResetExcluded) {
+  btnResetExcluded.addEventListener("click", () => {
+    state.excludedColorIds.clear();
+    renderPoolModal();
+    updateFilterPoolInfo();
+    showToast("Przywrócono wszystkie kolory do puli losowania! ✓");
+  });
+}
 
 // Losowanie pojedynczego regionu (z uwzględnieniem aktywnej puli)
 function randomizeSingle(regionIdx) {
@@ -711,7 +873,15 @@ function updateAll(saveHistory = false) {
 function openColorModal(regionIdx) {
   state.activeModalRegion = regionIdx;
   state.modalFilter = null;
-  document.getElementById("modal-title").textContent = `Wybierz kolor dla Regionu ${regionIdx}`;
+  const pool = getFilteredColorPool();
+  
+  let poolName = "";
+  if (state.favOnlyMode) poolName = " (Tylko Moje Ulubione)";
+  else if (state.activePreset && EVENT_PRESETS[state.activePreset]) poolName = ` (${EVENT_PRESETS[state.activePreset].name})`;
+  else if (state.activePreset && STYLE_PRESETS[state.activePreset]) poolName = ` (${STYLE_PRESETS[state.activePreset].name})`;
+  else if (pool.length < ARK_COLORS.length) poolName = ` (Aktywna pula: ${pool.length})`;
+
+  document.getElementById("modal-title").textContent = `Wybierz kolor dla Regionu ${regionIdx}${poolName}`;
   document.getElementById("color-search").value = "";
   renderModalFilterChips();
   filterAndRenderModalPalette();
@@ -731,12 +901,14 @@ function renderModalFilterChips() {
   if (!container) return;
   container.innerHTML = "";
 
-  const favCount = getFavoriteColorIds().size;
+  const pool = getFilteredColorPool();
+  const favs = getFavoriteColorIds();
+  const favCountInPool = pool.filter(c => favs.has(c.id)).length;
 
-  // Przycisk "Wszystkie"
+  // Przycisk "Wszystkie z puli"
   const allChip = document.createElement("div");
   allChip.className = `filter-chip ${state.modalFilter === null ? "active" : ""}`;
-  allChip.innerHTML = `<span>Wszystkie</span>`;
+  allChip.innerHTML = `<span>Wszystkie z puli (${pool.length})</span>`;
   allChip.addEventListener("click", () => {
     state.modalFilter = null;
     updateModalFilterChips();
@@ -744,23 +916,29 @@ function renderModalFilterChips() {
   });
   container.appendChild(allChip);
 
-  // Przycisk "⭐ Ulubione"
-  const favChip = document.createElement("div");
-  favChip.className = `filter-chip ${state.modalFilter === "favorites" ? "active" : ""}`;
-  favChip.innerHTML = `<span>⭐ Ulubione (${favCount})</span>`;
-  favChip.addEventListener("click", () => {
-    state.modalFilter = state.modalFilter === "favorites" ? null : "favorites";
-    updateModalFilterChips();
-    filterAndRenderModalPalette();
-  });
-  container.appendChild(favChip);
+  // Przycisk "⭐ Ulubione" (jeśli są w puli)
+  if (favCountInPool > 0) {
+    const favChip = document.createElement("div");
+    favChip.className = `filter-chip ${state.modalFilter === "favorites" ? "active" : ""}`;
+    favChip.innerHTML = `<span>⭐ Ulubione (${favCountInPool})</span>`;
+    favChip.addEventListener("click", () => {
+      state.modalFilter = state.modalFilter === "favorites" ? null : "favorites";
+      updateModalFilterChips();
+      filterAndRenderModalPalette();
+    });
+    container.appendChild(favChip);
+  }
 
   COLOR_CATEGORIES.forEach(cat => {
+    // Pokaż kategorię tylko jeśli w wybranej puli są kolory z tym tagiem
+    const countInPool = pool.filter(c => c.tags && c.tags.includes(cat.key)).length;
+    if (countInPool === 0) return;
+
     const chip = document.createElement("div");
     chip.className = `filter-chip ${state.modalFilter === cat.key ? "active" : ""}`;
     chip.innerHTML = `
       <span class="filter-chip-dot" style="background-color: ${cat.dot}"></span>
-      <span>${cat.label}</span>
+      <span>${cat.label} (${countInPool})</span>
     `;
     chip.addEventListener("click", () => {
       state.modalFilter = state.modalFilter === cat.key ? null : cat.key;
@@ -774,22 +952,13 @@ function renderModalFilterChips() {
 function updateModalFilterChips() {
   const chips = document.querySelectorAll("#modal-category-filters .filter-chip");
   if (!chips.length) return;
-  chips[0].classList.toggle("active", state.modalFilter === null);
-  chips[1].classList.toggle("active", state.modalFilter === "favorites");
-  const favCount = getFavoriteColorIds().size;
-  chips[1].innerHTML = `<span>⭐ Ulubione (${favCount})</span>`;
-
-  COLOR_CATEGORIES.forEach((cat, idx) => {
-    if (chips[idx + 2]) {
-      chips[idx + 2].classList.toggle("active", state.modalFilter === cat.key);
-    }
-  });
+  renderModalFilterChips();
 }
 
-// Filtruj i renderuj paletę w modalu
+// Filtruj i renderuj paletę w modalu (ograniczoną ściśle do aktywnej puli)
 function filterAndRenderModalPalette() {
   const query = document.getElementById("color-search").value.toLowerCase().trim();
-  let list = ARK_COLORS;
+  let list = getFilteredColorPool(); // Tylko aktualnie aktywna pula
   const favs = getFavoriteColorIds();
 
   if (state.modalFilter === "favorites") {

@@ -66,28 +66,61 @@
       </div>
     </section>
 
-    <!-- Sekcja filtrów losowania barw -->
+    <!-- Sekcja filtrów i presetów losowania barw -->
     <section class="filters-section">
       <div class="filters-header">
         <div class="filters-title-group">
           <span class="filters-icon">🎨</span>
-          <strong>Grupy kolorów do losowania:</strong>
-          <span class="filters-count-info" id="filters-pool-info">(pula: 227 kolorów)</span>
+          <strong>Pula kolorów do losowania:</strong>
+          <button class="filters-count-info-btn" id="filters-pool-info-btn" title="Kliknij, aby podejrzeć kolory w aktualnej puli i wykluczyć niechciane">
+            <span id="filters-pool-info">(pula: 227 kolorów)</span>
+            <span class="pool-btn-hint">👁️ Zarządzaj pulą</span>
+          </button>
         </div>
-        <div class="preset-buttons">
-          <span class="preset-label">Presety:</span>
-          <button class="preset-chip" data-preset="all">🌈 Wszystkie</button>
-          <button class="preset-chip" data-preset="fav-colors">⭐ Moje Kolory</button>
-          <button class="preset-chip" data-preset="black-red">🔴⚫ Krwawy Cień</button>
-          <button class="preset-chip" data-preset="camo">🌿🟤 Kamuflaż</button>
-          <button class="preset-chip" data-preset="ice">❄️ Zimowy</button>
-          <button class="preset-chip" data-preset="cyber">👾 Cyber / Neon</button>
-          <button class="preset-chip" data-preset="pastel">🍭 Pastele</button>
+        <!-- Główne presety zawsze na wierzchu -->
+        <div class="primary-presets">
+          <button class="preset-chip active" data-preset="all" title="Pełna baza 227 kolorów ARK">🌈 Wszystkie (227)</button>
+          <button class="preset-chip" data-preset="fav-colors" title="Losuj wyłącznie z oznaczonych gwiazdką">⭐ Moje Ulubione</button>
         </div>
       </div>
 
-      <div class="filter-chips-grid" id="filter-chips-grid">
-        <!-- Generowane dynamicznie tagi kolorów -->
+      <!-- Grupy Presetów -->
+      <div class="presets-container">
+        <!-- Rząd 1: Oficjalne Eventy ARK -->
+        <div class="preset-group-row">
+          <span class="preset-group-label">🎪 Eventy ARK:</span>
+          <div class="preset-chips-wrap">
+            <button class="preset-chip" data-preset="event-winter" title="Oficjalny event świąteczny (28 kolorów)">❄️ Winter Wonderland</button>
+            <button class="preset-chip" data-preset="event-love" title="Oficjalny event walentynkowy (24 kolory)">💕 Love Ascended</button>
+            <button class="preset-chip" data-preset="event-easter" title="Oficjalny event wielkanocny (36 kolorów)">🥚 Eggcellent Adventure</button>
+            <button class="preset-chip" data-preset="event-summer" title="Oficjalny event letni (18 kolorów)">☀️ Summer Bash</button>
+            <button class="preset-chip" data-preset="event-fear" title="Oficjalny event halloweenowy (14 kolorów)">🎃 Fear Ascended</button>
+            <button class="preset-chip" data-preset="event-turkey" title="Oficjalny event dziękczynienia (19 kolorów)">🦃 Turkey Trial</button>
+          </div>
+        </div>
+
+        <!-- Rząd 2: Style & Klimaty -->
+        <div class="preset-group-row">
+          <span class="preset-group-label">🎭 Style & Klimaty:</span>
+          <div class="preset-chips-wrap">
+            <button class="preset-chip" data-preset="style-alpha" title="Alpha (18 kolorów)">🔥 Alpha</button>
+            <button class="preset-chip" data-preset="style-cosmic" title="Nocny Kosmos i Bioluminescencja (18 kolorów)">🌌 Kosmos</button>
+            <button class="preset-chip" data-preset="style-dragon" title="Smoczy Ogień, Popiół i Złoto (18 kolorów)">🐲 Smoczy Ogień</button>
+            <button class="preset-chip" data-preset="style-frost" title="Nordycki Mróz i Stal (18 kolorów)">❄️ Nordycki Mróz</button>
+            <button class="preset-chip" data-preset="style-pastel" title="Słodki Pastel - Wata Cukrowa & Kawaii (18 kolorów)">🍭 Słodki Pastel</button>
+            <button class="preset-chip" data-preset="style-synthwave" title="Synthwave Sunset - Neonowy Zmierzch (18 kolorów)">🌇 Synthwave</button>
+            <button class="preset-chip" data-preset="style-reef" title="Tropikalna Rafa - Koralowa Laguna (18 kolorów)">🪸 Rafa Koralowa</button>
+            <button class="preset-chip" data-preset="style-royal" title="Królewski Ametyst i Złoto (18 kolorów)">👑 Królewski Ametyst</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tagi kolorów do szybkiego zawężania / dostrajania -->
+      <div class="filter-tags-wrapper">
+        <div class="filter-tags-label">Dostrój odcieniami (opcjonalnie zawęź pulę):</div>
+        <div class="filter-chips-grid" id="filter-chips-grid">
+          <!-- Generowane dynamicznie tagi kolorów -->
+        </div>
       </div>
     </section>
 
@@ -161,10 +194,32 @@
     </div>
   </div>
 
+  <!-- Modal podglądu i zarządzania bieżącą pulą losowania -->
+  <div class="modal-overlay" id="pool-modal">
+    <div class="modal-content modal-content-wide">
+      <div class="modal-header">
+        <div>
+          <h3 id="pool-modal-title">🎨 Kolory w bieżącej puli losowania</h3>
+          <div class="pool-modal-subtitle" id="pool-modal-subtitle">Kliknij kolor, aby go wykluczyć (przekreślić) z losowania lub przywrócić.</div>
+        </div>
+        <button class="modal-close" id="pool-modal-close">&times;</button>
+      </div>
+      <div class="pool-modal-toolbar">
+        <div class="pool-stats-badge" id="pool-stats-badge">Aktywne: 227 / Wykluczone: 0</div>
+        <div class="pool-toolbar-actions">
+          <button class="btn btn-secondary btn-sm" id="btn-reset-excluded">🔄 Przywróć wszystkie wykluczone</button>
+        </div>
+      </div>
+      <div class="pool-palette-grid" id="pool-modal-grid">
+        <!-- Renderowane kafelki kolorów bieżącej puli z możliwością wykluczenia -->
+      </div>
+    </div>
+  </div>
+
   <!-- Toast powiadomienie o skopiowaniu -->
   <div class="toast" id="toast">Skopiowano do schowka!</div>
 
   <script src="colors.js?v=20261016_17"></script>
-  <script src="app.js?v=20261016_18"></script>
+  <script src="app.js?v=20261016_25"></script>
 </body>
 </html>
