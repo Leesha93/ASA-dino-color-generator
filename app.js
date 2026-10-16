@@ -39,12 +39,12 @@ const state = {
   favOnlyMode: false,
   modalFilter: null, // pojedynczy filtr w modalu
   regions: [
-    { regionIndex: 0, color: getColorById(6), enabled: true },
-    { regionIndex: 1, color: getColorById(1), enabled: true },
-    { regionIndex: 2, color: getColorById(2), enabled: true },
-    { regionIndex: 3, color: getColorById(3), enabled: true },
-    { regionIndex: 4, color: getColorById(4), enabled: true },
-    { regionIndex: 5, color: getColorById(5), enabled: true }
+    { regionIndex: 0, color: getColorById(6), enabled: true, locked: false },
+    { regionIndex: 1, color: getColorById(1), enabled: true, locked: false },
+    { regionIndex: 2, color: getColorById(2), enabled: true, locked: false },
+    { regionIndex: 3, color: getColorById(3), enabled: true, locked: false },
+    { regionIndex: 4, color: getColorById(4), enabled: true, locked: false },
+    { regionIndex: 5, color: getColorById(5), enabled: true, locked: false }
   ]
 };
 
@@ -66,19 +66,20 @@ function renderPreviewBar() {
   state.regions.forEach((reg) => {
     const tile = document.createElement("div");
     tile.className = "preview-tile";
+    const lockIcon = reg.locked ? " 🔒" : "";
     if (reg.enabled) {
       tile.style.backgroundColor = reg.color.hex;
       const textCol = getContrastColor(reg.color.hex);
       tile.style.color = textCol;
       tile.innerHTML = `
-        <span class="tile-title" style="color: ${textCol}">R${reg.regionIndex}</span>
+        <span class="tile-title" style="color: ${textCol}">R${reg.regionIndex}${lockIcon}</span>
         <span class="tile-color-name" style="color: ${textCol}">${reg.color.name}</span>
       `;
     } else {
       tile.style.backgroundColor = "#1b2330";
       tile.style.color = "#55657e";
       tile.innerHTML = `
-        <span class="tile-title">R${reg.regionIndex}</span>
+        <span class="tile-title">R${reg.regionIndex}${lockIcon}</span>
         <span class="tile-color-name">[Wyłączony]</span>
       `;
     }
@@ -102,10 +103,15 @@ function renderRegionsGrid() {
           <div class="region-number">${reg.regionIndex}</div>
           <div class="region-title">Region ${reg.regionIndex}</div>
         </div>
-        <label class="region-toggle-label">
-          <input type="checkbox" ${reg.enabled ? "checked" : ""} data-reg="${reg.regionIndex}" class="region-toggle">
-          Aktywny
-        </label>
+        <div class="region-controls-group">
+          <button class="region-lock-btn ${reg.locked ? "locked" : ""}" data-reg="${reg.regionIndex}" title="${reg.locked ? "Region zablokowany przed losowaniem (kliknij, aby odblokować)" : "Zablokuj ten region przed losowaniem"}">
+            ${reg.locked ? "🔒" : "🔓"}
+          </button>
+          <label class="region-toggle-label">
+            <input type="checkbox" ${reg.enabled ? "checked" : ""} data-reg="${reg.regionIndex}" class="region-toggle">
+            Aktywny
+          </label>
+        </div>
       </div>
 
       <div class="region-card-body">
@@ -135,6 +141,7 @@ function renderRegionsGrid() {
     const copyBtn = card.querySelector(".btn-copy-one");
     const toggle = card.querySelector(".region-toggle");
     const idInput = card.querySelector(".region-id-input");
+    const lockBtn = card.querySelector(".region-lock-btn");
 
     swatch.addEventListener("click", () => openColorModal(reg.regionIndex));
     pickBtn.addEventListener("click", () => openColorModal(reg.regionIndex));
@@ -148,6 +155,16 @@ function renderRegionsGrid() {
     toggle.addEventListener("change", (e) => {
       reg.enabled = e.target.checked;
       updateAll();
+    });
+    lockBtn.addEventListener("click", () => {
+      reg.locked = !reg.locked;
+      renderRegionsGrid();
+      renderPreviewBar();
+      if (reg.locked) {
+        showToast(`Region ${reg.regionIndex} zablokowany 🔒`);
+      } else {
+        showToast(`Region ${reg.regionIndex} odblokowany 🔓`);
+      }
     });
 
     // Edycja bezpośrednia pola ID
@@ -625,27 +642,41 @@ document.querySelectorAll(".preset-chip").forEach(btn => {
 
 // Losowanie pojedynczego regionu (z uwzględnieniem aktywnej puli)
 function randomizeSingle(regionIdx) {
+  const reg = state.regions[regionIdx];
+  if (reg.locked) {
+    showToast(`Region ${regionIdx} jest zablokowany! Odblokuj go kłódką 🔓`);
+    return;
+  }
   const pool = getFilteredColorPool();
   if (pool.length === 0) {
     showToast("Brak kolorów w wybranej puli!");
     return;
   }
   const randomColor = pool[Math.floor(Math.random() * pool.length)];
-  state.regions[regionIdx].color = randomColor;
+  reg.color = randomColor;
   updateAll(true);
 }
 
-// Losowanie wszystkich aktywnych regionów (z uwzględnieniem aktywnej puli)
+// Losowanie wszystkich aktywnych regionów (z pominięciem zablokowanych)
 function randomizeAll() {
   const pool = getFilteredColorPool();
   if (pool.length === 0) {
     showToast("Brak kolorów w wybranej puli!");
     return;
   }
+  let changedCount = 0;
   state.regions.forEach((r) => {
-    r.color = pool[Math.floor(Math.random() * pool.length)];
+    if (!r.locked && r.enabled) {
+      r.color = pool[Math.floor(Math.random() * pool.length)];
+      changedCount++;
+    }
   });
-  updateAll(true);
+
+  if (changedCount === 0) {
+    showToast("Wszystkie aktywne regiony są zablokowane 🔒");
+  } else {
+    updateAll(true);
+  }
 }
 
 // Resetowanie do domyślnych (stały zestaw: 6 1 2 3 4 5)
