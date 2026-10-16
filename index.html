@@ -6,7 +6,7 @@
   <title>ARK Dino Color Generator</title>
   <link rel="icon" type="image/png" href="favicon.png?v=3">
   <link rel="alternate icon" href="favicon.ico?v=3">
-  <link rel="stylesheet" href="style.css?v=20261016_02">
+  <link rel="stylesheet" href="style.css?v=20261016_05">
 </head>
 <body>
   <div class="app-container">
@@ -44,7 +44,7 @@
           <button class="btn btn-sm btn-copy" data-target="admin-cmd">📋 Kopiuj</button>
         </div>
         <div class="command-box">
-          <code id="admin-cmd">cheat settargetdinocolor 0 1 | ...</code>
+          <textarea class="command-input" id="admin-cmd" rows="2" spellcheck="false" autocomplete="off">cheat settargetdinocolor 0 1 | ...</textarea>
         </div>
       </div>
 
@@ -52,12 +52,12 @@
         <div class="command-header">
           <div>
             <h3>Komenda Czatu / Plugin</h3>
-            <span class="cmd-desc">Format serwerowy /color dla włączonych pluginów</span>
+            <span class="cmd-desc">Format serwerowy /color dla włączonych pluginów (możesz edytować lub wkleić)</span>
           </div>
           <button class="btn btn-sm btn-copy" data-target="chat-cmd">📋 Kopiuj</button>
         </div>
         <div class="command-box">
-          <code id="chat-cmd">/color 0 0 0 0 0 0</code>
+          <textarea class="command-input" id="chat-cmd" rows="1" spellcheck="false" autocomplete="off">/color 0 0 0 0 0 0</textarea>
         </div>
       </div>
     </section>
@@ -161,6 +161,6 @@
   <div class="toast" id="toast">Skopiowano do schowka!</div>
 
   <script src="colors.js"></script>
-  <script src="app.js?v=20261016_03"></script>
+  <script src="app.js?v=20261016_05"></script>
 </body>
 </html>

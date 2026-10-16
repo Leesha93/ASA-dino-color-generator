@@ -112,7 +112,12 @@ function renderRegionsGrid() {
         <div class="color-swatch-large" style="background-color: ${reg.color.hex}" title="Kliknij, aby zmienić kolor"></div>
         <div class="region-info">
           <div class="color-info-name">${reg.color.name}</div>
-          <div class="color-info-meta">ID: <strong>${reg.color.id}</strong> | HEX: ${reg.color.hex}</div>
+          <div class="color-info-meta">
+            <span>ID:</span>
+            <input type="number" class="region-id-input" value="${reg.color.id}" min="1" max="254" data-reg="${reg.regionIndex}" title="Wpisz numer ID koloru i wciśnij Enter">
+            <span class="color-meta-divider">|</span>
+            <span>HEX: ${reg.color.hex}</span>
+          </div>
         </div>
       </div>
 
@@ -129,6 +134,7 @@ function renderRegionsGrid() {
     const randBtn = card.querySelector(".btn-rand-one");
     const copyBtn = card.querySelector(".btn-copy-one");
     const toggle = card.querySelector(".region-toggle");
+    const idInput = card.querySelector(".region-id-input");
 
     swatch.addEventListener("click", () => openColorModal(reg.regionIndex));
     pickBtn.addEventListener("click", () => openColorModal(reg.regionIndex));
@@ -144,35 +150,76 @@ function renderRegionsGrid() {
       updateAll();
     });
 
+    // Edycja bezpośrednia pola ID
+    idInput.addEventListener("click", (e) => e.stopPropagation());
+    const handleIdChange = (e) => {
+      const val = parseInt(e.target.value.trim(), 10);
+      if (!isNaN(val)) {
+        const found = ARK_COLORS.find(c => c.id === val);
+        if (found) {
+          reg.color = found;
+          reg.enabled = true;
+          updateAll();
+        } else {
+          // Jeśli nie znaleziono koloru o takim ID
+          showToast(`Nie znaleziono koloru o ID: ${val}`);
+          e.target.value = reg.color.id;
+        }
+      } else {
+        e.target.value = reg.color.id;
+      }
+    };
+    idInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.target.blur();
+      }
+    });
+    idInput.addEventListener("change", handleIdChange);
+
     grid.appendChild(card);
   });
 }
 
+// Flaga zapobiegająca nadpisywaniu pola komendy podczas gdy użytkownik w nim pisze
+let isEditingAdminCmd = false;
+let isEditingChatCmd = false;
+
 // Aktualizacja wygenerowanych komend
 function updateCommands() {
-  // Admin format: cheat settargetdinocolor <reg> <id> | ...
-  const adminParts = state.regions
-    .filter((r) => r.enabled)
-    .map((r) => `settargetdinocolor ${r.regionIndex} ${r.color.id}`);
-
   const adminCmdElem = document.getElementById("admin-cmd");
-  if (adminParts.length > 0) {
-    adminCmdElem.textContent = `cheat ${adminParts.join(" | ")} |`;
-  } else {
-    adminCmdElem.textContent = "cheat (żaden region nie jest aktywny)";
+  const chatCmdElem = document.getElementById("chat-cmd");
+
+  // Admin format: cheat settargetdinocolor <reg> <id> | ...
+  if (!isEditingAdminCmd && adminCmdElem) {
+    const adminParts = state.regions
+      .filter((r) => r.enabled)
+      .map((r) => `settargetdinocolor ${r.regionIndex} ${r.color.id}`);
+
+    if (adminParts.length > 0) {
+      adminCmdElem.value = `cheat ${adminParts.join(" | ")} |`;
+    } else {
+      adminCmdElem.value = "cheat (żaden region nie jest aktywny)";
+    }
+    // Automatyczne dopasowanie wysokości do zawiniętego tekstu
+    adminCmdElem.style.height = "auto";
+    adminCmdElem.style.height = `${adminCmdElem.scrollHeight}px`;
   }
 
   // Chat plugin format: /color <0> <1> <2> <3> <4> <5>
-  // Wartości nieaktywne to 0
-  const chatValues = state.regions.map((r) => (r.enabled ? r.color.id : 0));
-  const chatCmdElem = document.getElementById("chat-cmd");
-  chatCmdElem.textContent = `/color ${chatValues.join(" ")}`;
+  if (!isEditingChatCmd && chatCmdElem) {
+    const chatValues = state.regions.map((r) => (r.enabled ? r.color.id : 0));
+    chatCmdElem.value = `/color ${chatValues.join(" ")}`;
+    chatCmdElem.style.height = "auto";
+    chatCmdElem.style.height = `${chatCmdElem.scrollHeight}px`;
+  }
 }
 
 // Zbiorcza aktualizacja interfejsu
-function updateAll() {
+function updateAll(skipRegionsGrid = false) {
   renderPreviewBar();
-  renderRegionsGrid();
+  if (!skipRegionsGrid) {
+    renderRegionsGrid();
+  }
   updateCommands();
 }
 
@@ -790,12 +837,138 @@ function showToast(text) {
 document.querySelectorAll(".btn-copy").forEach((btn) => {
   btn.addEventListener("click", () => {
     const targetId = btn.dataset.target;
-    const code = document.getElementById(targetId).textContent;
+    const elem = document.getElementById(targetId);
+    const code = elem ? (elem.value !== undefined ? elem.value : elem.textContent) : "";
     navigator.clipboard.writeText(code).then(() => {
       showToast("Skopiowano komendę do schowka!");
     });
   });
 });
+
+// Dwukierunkowa integracja z polami komend:
+// 1. Parser i synchronizacja dla komendy admina (cheat settargetdinocolor ...)
+const adminCmdInput = document.getElementById("admin-cmd");
+if (adminCmdInput) {
+  adminCmdInput.addEventListener("focus", () => {
+    isEditingAdminCmd = true;
+  });
+
+  const parseAndApplyAdminCmd = () => {
+    const text = adminCmdInput.value;
+    // Dopasuj wszystkie pary: settargetdinocolor <reg> <id>
+    const regex = /settargetdinocolor\s+(\d+)\s+(\d+)/gi;
+    let match;
+    let foundAny = false;
+    const seenRegions = new Set();
+
+    while ((match = regex.exec(text)) !== null) {
+      foundAny = true;
+      const regIdx = parseInt(match[1], 10);
+      const colorId = parseInt(match[2], 10);
+
+      if (regIdx >= 0 && regIdx <= 5) {
+        seenRegions.add(regIdx);
+        const col = ARK_COLORS.find(c => c.id === colorId);
+        if (col) {
+          state.regions[regIdx].color = col;
+          state.regions[regIdx].enabled = true;
+        }
+      }
+    }
+
+    if (foundAny) {
+      // Wyłącz regiony, które nie występują w komendzie admina
+      state.regions.forEach(r => {
+        if (!seenRegions.has(r.regionIndex)) {
+          r.enabled = false;
+        }
+      });
+      updateAll();
+      showToast("Zsynchronizowano kolory z komendy admina!");
+    } else {
+      // Jeśli format jest niepoprawny, przywróć aktualny stan
+      updateCommands();
+    }
+  };
+
+  adminCmdInput.addEventListener("input", () => {
+    adminCmdInput.style.height = "auto";
+    adminCmdInput.style.height = `${adminCmdInput.scrollHeight}px`;
+  });
+
+  adminCmdInput.addEventListener("blur", () => {
+    isEditingAdminCmd = false;
+    parseAndApplyAdminCmd();
+  });
+
+  adminCmdInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      adminCmdInput.blur();
+    }
+  });
+}
+
+// 2. Parser i synchronizacja dla komendy pluginu /color (/color <r0> <r1> <r2> <r3> <r4> <r5>)
+const chatCmdInput = document.getElementById("chat-cmd");
+if (chatCmdInput) {
+  chatCmdInput.addEventListener("focus", () => {
+    isEditingChatCmd = true;
+  });
+
+  const parseAndApplyChatCmd = () => {
+    const text = chatCmdInput.value.trim();
+    // Szukaj liczb po /color lub samych 6 liczb
+    const cleaned = text.replace(/^\/color\s*/i, "").trim();
+    const numbers = cleaned.split(/\s+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+
+    if (numbers.length > 0) {
+      let applied = false;
+      numbers.slice(0, 6).forEach((id, idx) => {
+        if (idx <= 5) {
+          if (id === 0) {
+            // ID 0 w pluginie /color oznacza wyłączony / domyślny region
+            state.regions[idx].enabled = false;
+            applied = true;
+          } else {
+            const col = ARK_COLORS.find(c => c.id === id);
+            if (col) {
+              state.regions[idx].color = col;
+              state.regions[idx].enabled = true;
+              applied = true;
+            }
+          }
+        }
+      });
+
+      if (applied) {
+        updateAll();
+        showToast("Zsynchronizowano kolory z komendy /color!");
+      } else {
+        updateCommands();
+      }
+    } else {
+      updateCommands();
+    }
+  };
+
+  chatCmdInput.addEventListener("input", () => {
+    chatCmdInput.style.height = "auto";
+    chatCmdInput.style.height = `${chatCmdInput.scrollHeight}px`;
+  });
+
+  chatCmdInput.addEventListener("blur", () => {
+    isEditingChatCmd = false;
+    parseAndApplyChatCmd();
+  });
+
+  chatCmdInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      chatCmdInput.blur();
+    }
+  });
+}
 
 // Zdarzenia przycisków głównych
 document.getElementById("btn-random-all").addEventListener("click", randomizeAll);
