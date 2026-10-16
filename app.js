@@ -18,7 +18,6 @@ const COLOR_CATEGORIES = [
 // Presety grup
 const PRESETS = {
   "all": [], // puste = wszystkie
-  "dark": ["ciemne"],
   "black-red": ["czarne", "czerwone"],
   "camo": ["zielone", "brazowe", "czarne"],
   "ice": ["biale", "niebieskie", "szare"],
