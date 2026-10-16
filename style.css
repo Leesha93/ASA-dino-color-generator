@@ -42,10 +42,13 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 16px;
+  gap: 20px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border-color);
+}
+
+.logo-area {
+  flex-shrink: 0;
 }
 
 .logo-title {
@@ -73,27 +76,58 @@ body {
 
 .header-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 16px;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
   flex-grow: 1;
 }
 
 .header-actions-left {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  flex-direction: column;
   align-items: flex-start;
+  gap: 8px;
 }
 
 .header-actions-right {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: flex-start;
-  margin-left: auto;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+@media (min-width: 1020px) {
+  .header-actions-left {
+    flex-direction: row;
+    align-items: center;
+  }
+  .header-actions-right {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .header-actions {
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .header-actions-right {
+    align-items: flex-start;
+  }
 }
 
 /* Przyciski */
