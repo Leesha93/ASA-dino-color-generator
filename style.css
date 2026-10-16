@@ -159,10 +159,24 @@ body {
   transform: scale(1.02);
 }
 
+.preview-tile .tile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+}
+
 .preview-tile .tile-title {
   font-size: 0.75rem;
   font-weight: 700;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.preview-tile .tile-id {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  opacity: 0.9;
 }
 
 .preview-tile .tile-color-name {

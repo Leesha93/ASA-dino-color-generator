@@ -72,14 +72,20 @@ function renderPreviewBar() {
       const textCol = getContrastColor(reg.color.hex);
       tile.style.color = textCol;
       tile.innerHTML = `
-        <span class="tile-title" style="color: ${textCol}">R${reg.regionIndex}${lockIcon}</span>
+        <div class="tile-header">
+          <span class="tile-title" style="color: ${textCol}">R${reg.regionIndex}${lockIcon}</span>
+          <span class="tile-id" style="color: ${textCol}">ID: ${reg.color.id}</span>
+        </div>
         <span class="tile-color-name" style="color: ${textCol}">${reg.color.name}</span>
       `;
     } else {
       tile.style.backgroundColor = "#1b2330";
       tile.style.color = "#55657e";
       tile.innerHTML = `
-        <span class="tile-title">R${reg.regionIndex}${lockIcon}</span>
+        <div class="tile-header">
+          <span class="tile-title">R${reg.regionIndex}${lockIcon}</span>
+          <span class="tile-id">[off]</span>
+        </div>
         <span class="tile-color-name">[Wyłączony]</span>
       `;
     }
