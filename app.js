@@ -1,4 +1,4 @@
-// Definicje 12 grup kolorów z etykietami i kolorami kropek
+// Definicje 13 grup kolorów z etykietami i kolorami kropek
 const COLOR_CATEGORIES = [
   { key: "czarne", label: "Czarne", dot: "#000000" },
   { key: "szare", label: "Szare", dot: "#8B9BB4" },
@@ -11,12 +11,14 @@ const COLOR_CATEGORIES = [
   { key: "niebieskie", label: "Niebieskie", dot: "#00A8FF" },
   { key: "fioletowe", label: "Fioletowe", dot: "#9B59B6" },
   { key: "rozowe", label: "Różowe", dot: "#FF69B4" },
-  { key: "pastelowe", label: "Pastelowe", dot: "#FFAEC9" }
+  { key: "pastelowe", label: "Pastelowe", dot: "#FFAEC9" },
+  { key: "ciemne", label: "Ciemne", dot: "#1a1a24" }
 ];
 
 // Presety grup
 const PRESETS = {
   "all": [], // puste = wszystkie
+  "dark": ["ciemne"],
   "black-red": ["czarne", "czerwone"],
   "camo": ["zielone", "brazowe", "czarne"],
   "ice": ["biale", "niebieskie", "szare"],

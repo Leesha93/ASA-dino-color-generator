@@ -13,6 +13,7 @@ const ARK_COLORS = [
     "name": "Blue",
     "hex": "#0000FF",
     "tags": [
+      "ciemne",
       "niebieskie"
     ]
   },
@@ -113,6 +114,7 @@ const ARK_COLORS = [
     "name": "Black",
     "hex": "#3B3B3B",
     "tags": [
+      "ciemne",
       "czarne",
       "szare"
     ]
@@ -122,7 +124,8 @@ const ARK_COLORS = [
     "name": "Brown",
     "hex": "#593A2A",
     "tags": [
-      "brazowe"
+      "brazowe",
+      "ciemne"
     ]
   },
   {
@@ -130,6 +133,7 @@ const ARK_COLORS = [
     "name": "Dark Green",
     "hex": "#224900",
     "tags": [
+      "ciemne",
       "zielone"
     ]
   },
@@ -138,6 +142,7 @@ const ARK_COLORS = [
     "name": "Dark Red",
     "hex": "#812118",
     "tags": [
+      "ciemne",
       "czerwone"
     ]
   },
@@ -163,6 +168,7 @@ const ARK_COLORS = [
     "name": "Dino Dark Red",
     "hex": "#592b2b",
     "tags": [
+      "ciemne",
       "czerwone"
     ]
   },
@@ -224,6 +230,7 @@ const ARK_COLORS = [
     "name": "Dino Dark Green",
     "hex": "#224122",
     "tags": [
+      "ciemne",
       "zielone"
     ]
   },
@@ -241,6 +248,7 @@ const ARK_COLORS = [
     "name": "Dino Dark Blue",
     "hex": "#394263",
     "tags": [
+      "ciemne",
       "niebieskie"
     ]
   },
@@ -258,6 +266,7 @@ const ARK_COLORS = [
     "name": "Dino Dark Purple",
     "hex": "#403459",
     "tags": [
+      "ciemne",
       "fioletowe"
     ]
   },
@@ -286,6 +295,7 @@ const ARK_COLORS = [
     "hex": "#594e41",
     "tags": [
       "brazowe",
+      "ciemne",
       "szare"
     ]
   },
@@ -476,6 +486,7 @@ const ARK_COLORS = [
     "name": "NearBlack",
     "hex": "#515151",
     "tags": [
+      "ciemne",
       "czarne",
       "szare"
     ]
@@ -485,6 +496,7 @@ const ARK_COLORS = [
     "name": "DarkTurquoise",
     "hex": "#184546",
     "tags": [
+      "ciemne",
       "niebieskie"
     ]
   },
@@ -527,6 +539,7 @@ const ARK_COLORS = [
     "hex": "#3b3938",
     "tags": [
       "brazowe",
+      "ciemne",
       "szare"
     ]
   },
@@ -552,6 +565,7 @@ const ARK_COLORS = [
     "name": "DarkCement",
     "hex": "#525b56",
     "tags": [
+      "ciemne",
       "szare"
     ]
   },
@@ -586,6 +600,7 @@ const ARK_COLORS = [
     "name": "DarkViolet",
     "hex": "#730046",
     "tags": [
+      "ciemne",
       "fioletowe"
     ]
   },
@@ -594,6 +609,7 @@ const ARK_COLORS = [
     "name": "DarkMagenta",
     "hex": "#b70042",
     "tags": [
+      "ciemne",
       "rozowe"
     ]
   },
@@ -669,6 +685,7 @@ const ARK_COLORS = [
     "name": "ActualBlack",
     "hex": "#171717",
     "tags": [
+      "ciemne",
       "czarne"
     ]
   },
@@ -677,6 +694,7 @@ const ARK_COLORS = [
     "name": "MidnightBlue",
     "hex": "#191d36",
     "tags": [
+      "ciemne",
       "niebieskie"
     ]
   },
@@ -685,6 +703,7 @@ const ARK_COLORS = [
     "name": "DarkBlue",
     "hex": "#152b3a",
     "tags": [
+      "ciemne",
       "niebieskie"
     ]
   },
@@ -693,6 +712,7 @@ const ARK_COLORS = [
     "name": "BlackSands",
     "hex": "#302531",
     "tags": [
+      "ciemne",
       "czarne",
       "szare",
       "zolte"
@@ -728,6 +748,7 @@ const ARK_COLORS = [
     "name": "PineGreen",
     "hex": "#0f552e",
     "tags": [
+      "ciemne",
       "zielone"
     ]
   },
@@ -736,6 +757,7 @@ const ARK_COLORS = [
     "name": "SpruceGreen",
     "hex": "#005b45",
     "tags": [
+      "ciemne",
       "niebieskie",
       "zielone"
     ]
@@ -753,6 +775,7 @@ const ARK_COLORS = [
     "name": "DarkLavender",
     "hex": "#5e275f",
     "tags": [
+      "ciemne",
       "fioletowe"
     ]
   },
@@ -777,6 +800,7 @@ const ARK_COLORS = [
     "name": "DarkTeal",
     "hex": "#0e404a",
     "tags": [
+      "ciemne",
       "niebieskie"
     ]
   },
@@ -785,6 +809,7 @@ const ARK_COLORS = [
     "name": "MediumTeal",
     "hex": "#105563",
     "tags": [
+      "ciemne",
       "niebieskie"
     ]
   },
@@ -856,6 +881,7 @@ const ARK_COLORS = [
     "name": "Burn Coloring",
     "hex": "#330000",
     "tags": [
+      "ciemne",
       "czerwone"
     ]
   },
@@ -864,6 +890,7 @@ const ARK_COLORS = [
     "name": "Scab Coloring",
     "hex": "#660000",
     "tags": [
+      "ciemne",
       "czerwone"
     ]
   },
@@ -872,6 +899,7 @@ const ARK_COLORS = [
     "name": "Gore Coloring",
     "hex": "#B30000",
     "tags": [
+      "ciemne",
       "czerwone"
     ]
   },
@@ -922,7 +950,8 @@ const ARK_COLORS = [
     "name": "Bronze Coloring",
     "hex": "#331900",
     "tags": [
-      "brazowe"
+      "brazowe",
+      "ciemne"
     ]
   },
   {
@@ -930,7 +959,8 @@ const ARK_COLORS = [
     "name": "Terracotta Coloring",
     "hex": "#663300",
     "tags": [
-      "brazowe"
+      "brazowe",
+      "ciemne"
     ]
   },
   {
@@ -989,7 +1019,8 @@ const ARK_COLORS = [
     "name": "Drab Coloring",
     "hex": "#333300",
     "tags": [
-      "brazowe"
+      "brazowe",
+      "ciemne"
     ]
   },
   {
@@ -1056,6 +1087,7 @@ const ARK_COLORS = [
     "name": "Swamp Coloring",
     "hex": "#193300",
     "tags": [
+      "ciemne",
       "zielone"
     ]
   },
@@ -1122,6 +1154,7 @@ const ARK_COLORS = [
     "name": "Nori Coloring",
     "hex": "#003300",
     "tags": [
+      "ciemne",
       "zielone"
     ]
   },
@@ -1130,6 +1163,7 @@ const ARK_COLORS = [
     "name": "Hunter Coloring",
     "hex": "#006600",
     "tags": [
+      "ciemne",
       "zielone"
     ]
   },
@@ -1188,6 +1222,7 @@ const ARK_COLORS = [
     "name": "Jungle Coloring",
     "hex": "#00331A",
     "tags": [
+      "ciemne",
       "zielone"
     ]
   },
@@ -1196,6 +1231,7 @@ const ARK_COLORS = [
     "name": "Forest Coloring",
     "hex": "#006633",
     "tags": [
+      "ciemne",
       "zielone"
     ]
   },
@@ -1255,6 +1291,7 @@ const ARK_COLORS = [
     "name": "Mariana Coloring",
     "hex": "#003333",
     "tags": [
+      "ciemne",
       "niebieskie"
     ]
   },
@@ -1321,6 +1358,7 @@ const ARK_COLORS = [
     "name": "Cetecean Coloring",
     "hex": "#001A33",
     "tags": [
+      "ciemne",
       "niebieskie"
     ]
   },
@@ -1329,6 +1367,7 @@ const ARK_COLORS = [
     "name": "Prussian Coloring",
     "hex": "#003366",
     "tags": [
+      "ciemne",
       "niebieskie"
     ]
   },
@@ -1387,6 +1426,7 @@ const ARK_COLORS = [
     "name": "Midnight Coloring",
     "hex": "#000033",
     "tags": [
+      "ciemne",
       "niebieskie"
     ]
   },
@@ -1395,6 +1435,7 @@ const ARK_COLORS = [
     "name": "Navy Coloring",
     "hex": "#000066",
     "tags": [
+      "ciemne",
       "niebieskie"
     ]
   },
@@ -1403,6 +1444,7 @@ const ARK_COLORS = [
     "name": "Cobalt Coloring",
     "hex": "#0000B3",
     "tags": [
+      "ciemne",
       "niebieskie"
     ]
   },
@@ -1411,6 +1453,7 @@ const ARK_COLORS = [
     "name": "Blue Coloring",
     "hex": "#0000FF",
     "tags": [
+      "ciemne",
       "niebieskie"
     ]
   },
@@ -1453,6 +1496,7 @@ const ARK_COLORS = [
     "name": "Twilight Coloring",
     "hex": "#190033",
     "tags": [
+      "ciemne",
       "fioletowe"
     ]
   },
@@ -1461,6 +1505,7 @@ const ARK_COLORS = [
     "name": "Eminence Coloring",
     "hex": "#330066",
     "tags": [
+      "ciemne",
       "fioletowe"
     ]
   },
@@ -1469,6 +1514,7 @@ const ARK_COLORS = [
     "name": "Indigo Coloring",
     "hex": "#5900B3",
     "tags": [
+      "ciemne",
       "fioletowe"
     ]
   },
@@ -1477,6 +1523,7 @@ const ARK_COLORS = [
     "name": "Violet Coloring",
     "hex": "#8000FF",
     "tags": [
+      "ciemne",
       "fioletowe"
     ]
   },
@@ -1519,6 +1566,7 @@ const ARK_COLORS = [
     "name": "Eggplant Coloring",
     "hex": "#330033",
     "tags": [
+      "ciemne",
       "fioletowe"
     ]
   },
@@ -1527,6 +1575,7 @@ const ARK_COLORS = [
     "name": "Plum Coloring",
     "hex": "#660066",
     "tags": [
+      "ciemne",
       "fioletowe"
     ]
   },
@@ -1587,6 +1636,7 @@ const ARK_COLORS = [
     "name": "Raisin Coloring",
     "hex": "#330019",
     "tags": [
+      "ciemne",
       "czerwone"
     ]
   },
@@ -1595,6 +1645,7 @@ const ARK_COLORS = [
     "name": "Tyrian Coloring",
     "hex": "#660033",
     "tags": [
+      "ciemne",
       "czerwone"
     ]
   },
@@ -1603,6 +1654,7 @@ const ARK_COLORS = [
     "name": "Lust Coloring",
     "hex": "#B30059",
     "tags": [
+      "ciemne",
       "rozowe"
     ]
   },
@@ -1653,6 +1705,7 @@ const ARK_COLORS = [
     "name": "Black Coloring",
     "hex": "#191919",
     "tags": [
+      "ciemne",
       "czarne"
     ]
   },
@@ -1661,6 +1714,7 @@ const ARK_COLORS = [
     "name": "Shadow Coloring",
     "hex": "#333333",
     "tags": [
+      "ciemne",
       "czarne",
       "szare"
     ]
@@ -1734,7 +1788,8 @@ const ARK_COLORS = [
     "name": "Mud Coloring",
     "hex": "#403522",
     "tags": [
-      "brazowe"
+      "brazowe",
+      "ciemne"
     ]
   },
   {
