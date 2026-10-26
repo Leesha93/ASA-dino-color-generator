@@ -190,11 +190,12 @@ body {
   position: relative;
 }
 
-.preview-tile.is-locked {
+.preview-tile.is-locked,
+.preview-tile.disabled {
   cursor: pointer;
 }
 
-.preview-tile:not(.is-locked):active {
+.preview-tile:not(.is-locked):not(.disabled):active {
   cursor: grabbing;
 }
 
@@ -666,12 +667,17 @@ body {
   user-select: none;
 }
 
-.color-swatch-large.is-locked {
+.color-swatch-large.is-locked,
+.region-card.disabled .color-swatch-large {
   cursor: pointer;
 }
 
-.color-swatch-large:not(.is-locked):active {
+.color-swatch-large:not(.is-locked):not(.disabled):active {
   cursor: grabbing;
+}
+
+.region-card.disabled .color-swatch-large:active {
+  cursor: pointer;
 }
 
 .color-swatch-large:hover {

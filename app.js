@@ -188,7 +188,8 @@ function setupTouchDrag(element, regionIndex, colorHex) {
   let currentTargetEl = null;
 
   element.addEventListener("touchstart", (e) => {
-    if (state.regions[regionIndex].locked) return;
+    const reg = state.regions[regionIndex];
+    if (reg.locked || !reg.enabled) return;
     const touch = e.touches[0];
     touchStartPos = { x: touch.clientX, y: touch.clientY };
     isMoving = false;
@@ -241,7 +242,7 @@ function setupTouchDrag(element, regionIndex, colorHex) {
         const targetIdx = parseInt(targetCandidate.dataset.reg, 10);
         if (!isNaN(targetIdx) && targetIdx !== regionIndex) {
           currentTargetEl = targetCandidate;
-          if (state.regions[targetIdx].locked) {
+          if (state.regions[targetIdx].locked || !state.regions[targetIdx].enabled) {
             currentTargetEl.classList.add("drag-locked");
           } else {
             const rect = targetCandidate.getBoundingClientRect();
@@ -273,6 +274,8 @@ function setupTouchDrag(element, regionIndex, colorHex) {
       if (!isNaN(targetIdx) && targetIdx !== regionIndex) {
         if (state.regions[targetIdx].locked) {
           showToast(`Region ${targetIdx} jest zablokowany kłódką 🔒 (brak możliwości zamiany)`);
+        } else if (!state.regions[targetIdx].enabled) {
+          showToast(`Region ${targetIdx} jest nieaktywny (brak możliwości zamiany)`);
         } else {
           if (isInsertLeft) {
             insertRegionColor(regionIndex, targetIdx, "before");
@@ -300,7 +303,8 @@ function setupTouchDrag(element, regionIndex, colorHex) {
 
 // Dołączanie zdarzeń Drag & Drop do kafelka w pasku podglądu
 function attachTileDragAndDrop(tile, reg) {
-  if (!reg.locked) {
+  const isProtected = reg.locked || !reg.enabled;
+  if (!isProtected) {
     tile.draggable = true;
 
     tile.addEventListener("dragstart", (e) => {
@@ -339,7 +343,7 @@ function attachTileDragAndDrop(tile, reg) {
   tile.addEventListener("dragover", (e) => {
     if (draggedRegionIndex !== null && draggedRegionIndex !== reg.regionIndex) {
       e.preventDefault();
-      if (reg.locked) {
+      if (reg.locked || !reg.enabled) {
         e.dataTransfer.dropEffect = "none";
         tile.classList.add("drag-locked");
         return;
@@ -376,6 +380,10 @@ function attachTileDragAndDrop(tile, reg) {
       showToast(`Region ${reg.regionIndex} jest zablokowany kłódką 🔒 (brak możliwości zamiany)`);
       return;
     }
+    if (!reg.enabled) {
+      showToast(`Region ${reg.regionIndex} jest nieaktywny (brak możliwości zamiany)`);
+      return;
+    }
 
     const raw = e.dataTransfer.getData("text/plain");
     const sourceIdx = draggedRegionIndex !== null ? draggedRegionIndex : parseInt(raw, 10);
@@ -393,7 +401,8 @@ function attachTileDragAndDrop(tile, reg) {
 
 // Dołączanie zdarzeń Drag & Drop do karty regionu i próbki koloru
 function attachCardDragAndDrop(card, swatch, reg) {
-  if (!reg.locked) {
+  const isProtected = reg.locked || !reg.enabled;
+  if (!isProtected) {
     swatch.draggable = true;
 
     swatch.addEventListener("dragstart", (e) => {
@@ -432,7 +441,7 @@ function attachCardDragAndDrop(card, swatch, reg) {
   card.addEventListener("dragover", (e) => {
     if (draggedRegionIndex !== null && draggedRegionIndex !== reg.regionIndex) {
       e.preventDefault();
-      if (reg.locked) {
+      if (reg.locked || !reg.enabled) {
         e.dataTransfer.dropEffect = "none";
         card.classList.add("drag-locked");
         return;
@@ -469,6 +478,10 @@ function attachCardDragAndDrop(card, swatch, reg) {
       showToast(`Region ${reg.regionIndex} jest zablokowany kłódką 🔒 (brak możliwości zamiany)`);
       return;
     }
+    if (!reg.enabled) {
+      showToast(`Region ${reg.regionIndex} jest nieaktywny (brak możliwości zamiany)`);
+      return;
+    }
 
     const raw = e.dataTransfer.getData("text/plain");
     const sourceIdx = draggedRegionIndex !== null ? draggedRegionIndex : parseInt(raw, 10);
@@ -491,12 +504,14 @@ function renderPreviewBar() {
 
   state.regions.forEach((reg) => {
     const tile = document.createElement("div");
-    tile.className = `preview-tile ${reg.locked ? "is-locked" : ""}`;
+    tile.className = `preview-tile ${reg.locked ? "is-locked" : ""} ${reg.enabled ? "" : "disabled"}`;
     tile.dataset.reg = reg.regionIndex;
     const lockIcon = reg.locked ? " 🔒" : "";
 
     if (reg.locked) {
       tile.title = `Region R${reg.regionIndex} (zablokowany kłódką 🔒) • Kliknij, aby wybrać kolor`;
+    } else if (!reg.enabled) {
+      tile.title = `Region R${reg.regionIndex} (nieaktywny) • Kliknij, aby wybrać kolor`;
     } else {
       tile.title = `Region R${reg.regionIndex}: ${reg.color.name} • Kliknij lub przeciągnij (Drag & Drop)`;
     }
@@ -546,9 +561,12 @@ function renderRegionsGrid() {
     card.className = `region-card ${reg.enabled ? "" : "disabled"} ${reg.locked ? "is-locked" : ""}`;
     card.dataset.reg = reg.regionIndex;
 
-    const swatchTitle = reg.locked
-      ? "Region zablokowany kłódką 🔒 (brak możliwości zamiany)"
-      : "Kliknij, aby wybrać kolor • Przeciągnij, aby zamienić miejscami (Drag & Drop)";
+    let swatchTitle = "Kliknij, aby wybrać kolor • Przeciągnij, aby zamienić miejscami (Drag & Drop)";
+    if (reg.locked) {
+      swatchTitle = "Region zablokowany kłódką 🔒 (brak możliwości zamiany)";
+    } else if (!reg.enabled) {
+      swatchTitle = "Region nieaktywny (brak możliwości zamiany)";
+    }
 
     card.innerHTML = `
       <div class="region-card-header">
@@ -696,13 +714,21 @@ function swapRegionColors(sourceIdx, targetIdx) {
   const tgtReg = state.regions[targetIdx];
   if (!srcReg || !tgtReg) return;
 
-  // Odporne na przeciąganie zablokowane regiony
+  // Odporne na przeciąganie zablokowane i nieaktywne regiony
   if (srcReg.locked) {
     showToast(`Region ${sourceIdx} jest zablokowany kłódką 🔒 (brak możliwości zamiany)`);
     return;
   }
+  if (!srcReg.enabled) {
+    showToast(`Region ${sourceIdx} jest nieaktywny (brak możliwości zamiany)`);
+    return;
+  }
   if (tgtReg.locked) {
     showToast(`Region ${targetIdx} jest zablokowany kłódką 🔒 (brak możliwości zamiany)`);
+    return;
+  }
+  if (!tgtReg.enabled) {
+    showToast(`Region ${targetIdx} jest nieaktywny (brak możliwości zamiany)`);
     return;
   }
 
@@ -711,16 +737,11 @@ function swapRegionColors(sourceIdx, targetIdx) {
   srcReg.color = tgtReg.color;
   tgtReg.color = tempColor;
 
-  // Jeśli docelowy region był wyłączony, a źródłowy włączony – aktywujemy docelowy
-  if (!tgtReg.enabled && srcReg.enabled) {
-    tgtReg.enabled = true;
-  }
-
   updateAll(true);
   showToast(`Zamieniono kolory: Region ${sourceIdx} ⇄ Region ${targetIdx} 🔄`);
 }
 
-// Wstawienie koloru pomiędzy regionami (przesunięcie pozostałych odblokowanych)
+// Wstawienie koloru pomiędzy regionami (przesunięcie pozostałych aktywnych i odblokowanych)
 function insertRegionColor(sourceIdx, targetIdx, position = "before") {
   if (sourceIdx === targetIdx) return;
   const srcReg = state.regions[sourceIdx];
@@ -728,43 +749,46 @@ function insertRegionColor(sourceIdx, targetIdx, position = "before") {
     showToast(`Region ${sourceIdx} jest zablokowany kłódką 🔒 (brak możliwości przesunięcia)`);
     return;
   }
-
-  // Odczytaj listę indeksów regionów, które NIE są zablokowane
-  const unlockedIndices = [];
-  state.regions.forEach(r => {
-    if (!r.locked) unlockedIndices.push(r.regionIndex);
-  });
-
-  if (unlockedIndices.length < 2) {
-    showToast("Zbyt wiele regionów jest zablokowanych, aby przesunąć barwy 🔒");
+  if (!srcReg.enabled) {
+    showToast(`Region ${sourceIdx} jest nieaktywny (brak możliwości przesunięcia)`);
     return;
   }
 
-  // Lista obiektów dla odblokowanych regionów
-  const unlockedItems = unlockedIndices.map(idx => ({
+  // Odczytaj listę indeksów regionów, które NIE są zablokowane i SĄ AKTYWNE
+  const availableIndices = [];
+  state.regions.forEach(r => {
+    if (!r.locked && r.enabled) availableIndices.push(r.regionIndex);
+  });
+
+  if (availableIndices.length < 2) {
+    showToast("Zbyt mało aktywnych i odblokowanych regionów, aby przesunąć barwy 🔒");
+    return;
+  }
+
+  // Lista obiektów dla aktywnych odblokowanych regionów
+  const availableItems = availableIndices.map(idx => ({
     origIdx: idx,
-    color: state.regions[idx].color,
-    enabled: state.regions[idx].enabled
+    color: state.regions[idx].color
   }));
 
-  // Znajdź pozycję elementu źródłowego na liście odblokowanych
-  const srcPos = unlockedItems.findIndex(item => item.origIdx === sourceIdx);
+  // Znajdź pozycję elementu źródłowego na liście aktywnych i odblokowanych
+  const srcPos = availableItems.findIndex(item => item.origIdx === sourceIdx);
   if (srcPos === -1) return;
 
   // Wyjmij element źródłowy
-  const [movedItem] = unlockedItems.splice(srcPos, 1);
+  const [movedItem] = availableItems.splice(srcPos, 1);
 
-  // Oblicz pozycję docelową w liście odblokowanych
-  let targetPos = unlockedItems.findIndex(item => item.origIdx === targetIdx);
+  // Oblicz pozycję docelową w liście
+  let targetPos = availableItems.findIndex(item => item.origIdx === targetIdx);
 
   if (targetPos === -1) {
-    // Jeżeli targetIdx jest zablokowany, wstawiamy względem najbliższego sąsiada
+    // Jeżeli targetIdx jest zablokowany lub nieaktywny, wstawiamy względem najbliższego aktywnego sąsiada
     if (position === "before") {
-      targetPos = unlockedItems.findIndex(item => item.origIdx > targetIdx);
-      if (targetPos === -1) targetPos = unlockedItems.length;
+      targetPos = availableItems.findIndex(item => item.origIdx > targetIdx);
+      if (targetPos === -1) targetPos = availableItems.length;
     } else {
       let lastBefore = -1;
-      unlockedItems.forEach((item, i) => {
+      availableItems.forEach((item, i) => {
         if (item.origIdx < targetIdx) lastBefore = i;
       });
       targetPos = lastBefore + 1;
@@ -776,25 +800,21 @@ function insertRegionColor(sourceIdx, targetIdx, position = "before") {
   }
 
   // Wstaw w nowej pozycji
-  unlockedItems.splice(targetPos, 0, movedItem);
+  availableItems.splice(targetPos, 0, movedItem);
 
   // Sprawdź czy zaszła zmiana
   let anyChanged = false;
-  unlockedIndices.forEach((slotIdx, i) => {
-    if (state.regions[slotIdx].color.id !== unlockedItems[i].color.id) {
+  availableIndices.forEach((slotIdx, i) => {
+    if (state.regions[slotIdx].color.id !== availableItems[i].color.id) {
       anyChanged = true;
     }
   });
 
   if (!anyChanged) return;
 
-  // Zastosuj nowe przypisania do odblokowanych slotów
-  unlockedIndices.forEach((slotIdx, i) => {
-    const item = unlockedItems[i];
-    state.regions[slotIdx].color = item.color;
-    if (!state.regions[slotIdx].enabled && item.enabled) {
-      state.regions[slotIdx].enabled = true;
-    }
+  // Zastosuj nowe przypisania wyłącznie do aktywnych i odblokowanych slotów
+  availableIndices.forEach((slotIdx, i) => {
+    state.regions[slotIdx].color = availableItems[i].color;
   });
 
   updateAll(true);
