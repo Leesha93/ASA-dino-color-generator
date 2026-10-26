@@ -231,7 +231,7 @@ function setupTouchDrag(element, regionIndex, colorHex) {
       const targetCandidate = elBelow?.closest("[data-reg]");
 
       if (currentTargetEl && currentTargetEl !== targetCandidate) {
-        currentTargetEl.classList.remove("drag-over", "drag-locked");
+        currentTargetEl.classList.remove("drag-over", "drag-locked", "drag-insert-left", "drag-insert-right");
         currentTargetEl = null;
       }
 
@@ -242,7 +242,16 @@ function setupTouchDrag(element, regionIndex, colorHex) {
           if (state.regions[targetIdx].locked) {
             currentTargetEl.classList.add("drag-locked");
           } else {
-            currentTargetEl.classList.add("drag-over");
+            const rect = targetCandidate.getBoundingClientRect();
+            const ratioX = (touch.clientX - rect.left) / rect.width;
+            targetCandidate.classList.remove("drag-over", "drag-insert-left", "drag-insert-right");
+            if (ratioX < 0.28) {
+              targetCandidate.classList.add("drag-insert-left");
+            } else if (ratioX > 0.72) {
+              targetCandidate.classList.add("drag-insert-right");
+            } else {
+              targetCandidate.classList.add("drag-over");
+            }
           }
         }
       }
@@ -255,13 +264,21 @@ function setupTouchDrag(element, regionIndex, colorHex) {
       avatar = null;
     }
     if (currentTargetEl) {
-      currentTargetEl.classList.remove("drag-over", "drag-locked");
+      const isInsertLeft = currentTargetEl.classList.contains("drag-insert-left");
+      const isInsertRight = currentTargetEl.classList.contains("drag-insert-right");
+      currentTargetEl.classList.remove("drag-over", "drag-locked", "drag-insert-left", "drag-insert-right");
       const targetIdx = parseInt(currentTargetEl.dataset.reg, 10);
       if (!isNaN(targetIdx) && targetIdx !== regionIndex) {
         if (state.regions[targetIdx].locked) {
           showToast(`Region ${targetIdx} jest zablokowany kłódką 🔒 (brak możliwości zamiany)`);
         } else {
-          swapRegionColors(regionIndex, targetIdx);
+          if (isInsertLeft) {
+            insertRegionColor(regionIndex, targetIdx, "before");
+          } else if (isInsertRight) {
+            insertRegionColor(regionIndex, targetIdx, "after");
+          } else {
+            swapRegionColors(regionIndex, targetIdx);
+          }
         }
       }
       currentTargetEl = null;
@@ -302,7 +319,9 @@ function attachTileDragAndDrop(tile, reg) {
     tile.addEventListener("dragend", () => {
       tile.classList.remove("is-dragging");
       document.body.classList.remove("is-color-dragging");
-      document.querySelectorAll(".drag-over, .drag-locked").forEach(el => el.classList.remove("drag-over", "drag-locked"));
+      document.querySelectorAll(".drag-over, .drag-locked, .drag-insert-left, .drag-insert-right").forEach(el => {
+        el.classList.remove("drag-over", "drag-locked", "drag-insert-left", "drag-insert-right");
+      });
       draggedRegionIndex = null;
       removeFloatingBadge();
       setTimeout(() => {
@@ -320,16 +339,19 @@ function attachTileDragAndDrop(tile, reg) {
       e.preventDefault();
       if (reg.locked) {
         e.dataTransfer.dropEffect = "none";
-      } else {
-        e.dataTransfer.dropEffect = "move";
-      }
-    }
-  });
-
-  tile.addEventListener("dragenter", (e) => {
-    if (draggedRegionIndex !== null && draggedRegionIndex !== reg.regionIndex) {
-      if (reg.locked) {
         tile.classList.add("drag-locked");
+        return;
+      }
+      e.dataTransfer.dropEffect = "move";
+
+      const rect = tile.getBoundingClientRect();
+      const ratio = (e.clientX - rect.left) / rect.width;
+
+      tile.classList.remove("drag-over", "drag-insert-left", "drag-insert-right");
+      if (ratio < 0.28) {
+        tile.classList.add("drag-insert-left");
+      } else if (ratio > 0.72) {
+        tile.classList.add("drag-insert-right");
       } else {
         tile.classList.add("drag-over");
       }
@@ -338,21 +360,31 @@ function attachTileDragAndDrop(tile, reg) {
 
   tile.addEventListener("dragleave", (e) => {
     if (tile.contains(e.relatedTarget)) return;
-    tile.classList.remove("drag-over", "drag-locked");
+    tile.classList.remove("drag-over", "drag-locked", "drag-insert-left", "drag-insert-right");
   });
 
   tile.addEventListener("drop", (e) => {
     e.preventDefault();
-    tile.classList.remove("drag-over", "drag-locked");
+    const isInsertLeft = tile.classList.contains("drag-insert-left");
+    const isInsertRight = tile.classList.contains("drag-insert-right");
+    tile.classList.remove("drag-over", "drag-locked", "drag-insert-left", "drag-insert-right");
     removeFloatingBadge();
+
     if (reg.locked) {
       showToast(`Region ${reg.regionIndex} jest zablokowany kłódką 🔒 (brak możliwości zamiany)`);
       return;
     }
+
     const raw = e.dataTransfer.getData("text/plain");
     const sourceIdx = draggedRegionIndex !== null ? draggedRegionIndex : parseInt(raw, 10);
     if (!isNaN(sourceIdx) && sourceIdx !== reg.regionIndex) {
-      swapRegionColors(sourceIdx, reg.regionIndex);
+      if (isInsertLeft) {
+        insertRegionColor(sourceIdx, reg.regionIndex, "before");
+      } else if (isInsertRight) {
+        insertRegionColor(sourceIdx, reg.regionIndex, "after");
+      } else {
+        swapRegionColors(sourceIdx, reg.regionIndex);
+      }
     }
   });
 }
@@ -380,7 +412,9 @@ function attachCardDragAndDrop(card, swatch, reg) {
     swatch.addEventListener("dragend", () => {
       swatch.classList.remove("is-dragging");
       document.body.classList.remove("is-color-dragging");
-      document.querySelectorAll(".drag-over, .drag-locked").forEach(el => el.classList.remove("drag-over", "drag-locked"));
+      document.querySelectorAll(".drag-over, .drag-locked, .drag-insert-left, .drag-insert-right").forEach(el => {
+        el.classList.remove("drag-over", "drag-locked", "drag-insert-left", "drag-insert-right");
+      });
       draggedRegionIndex = null;
       removeFloatingBadge();
       setTimeout(() => {
@@ -398,16 +432,19 @@ function attachCardDragAndDrop(card, swatch, reg) {
       e.preventDefault();
       if (reg.locked) {
         e.dataTransfer.dropEffect = "none";
-      } else {
-        e.dataTransfer.dropEffect = "move";
-      }
-    }
-  });
-
-  card.addEventListener("dragenter", (e) => {
-    if (draggedRegionIndex !== null && draggedRegionIndex !== reg.regionIndex) {
-      if (reg.locked) {
         card.classList.add("drag-locked");
+        return;
+      }
+      e.dataTransfer.dropEffect = "move";
+
+      const rect = card.getBoundingClientRect();
+      const ratioX = (e.clientX - rect.left) / rect.width;
+
+      card.classList.remove("drag-over", "drag-insert-left", "drag-insert-right");
+      if (ratioX < 0.22) {
+        card.classList.add("drag-insert-left");
+      } else if (ratioX > 0.78) {
+        card.classList.add("drag-insert-right");
       } else {
         card.classList.add("drag-over");
       }
@@ -416,21 +453,31 @@ function attachCardDragAndDrop(card, swatch, reg) {
 
   card.addEventListener("dragleave", (e) => {
     if (card.contains(e.relatedTarget)) return;
-    card.classList.remove("drag-over", "drag-locked");
+    card.classList.remove("drag-over", "drag-locked", "drag-insert-left", "drag-insert-right");
   });
 
   card.addEventListener("drop", (e) => {
     e.preventDefault();
-    card.classList.remove("drag-over", "drag-locked");
+    const isInsertLeft = card.classList.contains("drag-insert-left");
+    const isInsertRight = card.classList.contains("drag-insert-right");
+    card.classList.remove("drag-over", "drag-locked", "drag-insert-left", "drag-insert-right");
     removeFloatingBadge();
+
     if (reg.locked) {
       showToast(`Region ${reg.regionIndex} jest zablokowany kłódką 🔒 (brak możliwości zamiany)`);
       return;
     }
+
     const raw = e.dataTransfer.getData("text/plain");
     const sourceIdx = draggedRegionIndex !== null ? draggedRegionIndex : parseInt(raw, 10);
     if (!isNaN(sourceIdx) && sourceIdx !== reg.regionIndex) {
-      swapRegionColors(sourceIdx, reg.regionIndex);
+      if (isInsertLeft) {
+        insertRegionColor(sourceIdx, reg.regionIndex, "before");
+      } else if (isInsertRight) {
+        insertRegionColor(sourceIdx, reg.regionIndex, "after");
+      } else {
+        swapRegionColors(sourceIdx, reg.regionIndex);
+      }
     }
   });
 }
@@ -669,6 +716,88 @@ function swapRegionColors(sourceIdx, targetIdx) {
 
   updateAll(true);
   showToast(`Zamieniono kolory: Region ${sourceIdx} ⇄ Region ${targetIdx} 🔄`);
+}
+
+// Wstawienie koloru pomiędzy regionami (przesunięcie pozostałych odblokowanych)
+function insertRegionColor(sourceIdx, targetIdx, position = "before") {
+  if (sourceIdx === targetIdx) return;
+  const srcReg = state.regions[sourceIdx];
+  if (!srcReg || srcReg.locked) {
+    showToast(`Region ${sourceIdx} jest zablokowany kłódką 🔒 (brak możliwości przesunięcia)`);
+    return;
+  }
+
+  // Odczytaj listę indeksów regionów, które NIE są zablokowane
+  const unlockedIndices = [];
+  state.regions.forEach(r => {
+    if (!r.locked) unlockedIndices.push(r.regionIndex);
+  });
+
+  if (unlockedIndices.length < 2) {
+    showToast("Zbyt wiele regionów jest zablokowanych, aby przesunąć barwy 🔒");
+    return;
+  }
+
+  // Lista obiektów dla odblokowanych regionów
+  const unlockedItems = unlockedIndices.map(idx => ({
+    origIdx: idx,
+    color: state.regions[idx].color,
+    enabled: state.regions[idx].enabled
+  }));
+
+  // Znajdź pozycję elementu źródłowego na liście odblokowanych
+  const srcPos = unlockedItems.findIndex(item => item.origIdx === sourceIdx);
+  if (srcPos === -1) return;
+
+  // Wyjmij element źródłowy
+  const [movedItem] = unlockedItems.splice(srcPos, 1);
+
+  // Oblicz pozycję docelową w liście odblokowanych
+  let targetPos = unlockedItems.findIndex(item => item.origIdx === targetIdx);
+
+  if (targetPos === -1) {
+    // Jeżeli targetIdx jest zablokowany, wstawiamy względem najbliższego sąsiada
+    if (position === "before") {
+      targetPos = unlockedItems.findIndex(item => item.origIdx > targetIdx);
+      if (targetPos === -1) targetPos = unlockedItems.length;
+    } else {
+      let lastBefore = -1;
+      unlockedItems.forEach((item, i) => {
+        if (item.origIdx < targetIdx) lastBefore = i;
+      });
+      targetPos = lastBefore + 1;
+    }
+  } else {
+    if (position === "after") {
+      targetPos += 1;
+    }
+  }
+
+  // Wstaw w nowej pozycji
+  unlockedItems.splice(targetPos, 0, movedItem);
+
+  // Sprawdź czy zaszła zmiana
+  let anyChanged = false;
+  unlockedIndices.forEach((slotIdx, i) => {
+    if (state.regions[slotIdx].color.id !== unlockedItems[i].color.id) {
+      anyChanged = true;
+    }
+  });
+
+  if (!anyChanged) return;
+
+  // Zastosuj nowe przypisania do odblokowanych slotów
+  unlockedIndices.forEach((slotIdx, i) => {
+    const item = unlockedItems[i];
+    state.regions[slotIdx].color = item.color;
+    if (!state.regions[slotIdx].enabled && item.enabled) {
+      state.regions[slotIdx].enabled = true;
+    }
+  });
+
+  updateAll(true);
+  const posText = position === "before" ? `przed Region ${targetIdx}` : `za Region ${targetIdx}`;
+  showToast(`Wstawiono kolor z Regionu ${sourceIdx} ${posText} (przesunięto barwy) ⇄`);
 }
 
 // Pamięć podręczna LocalStorage

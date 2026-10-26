@@ -187,6 +187,7 @@ body {
   cursor: grab;
   min-height: 60px;
   user-select: none;
+  position: relative;
 }
 
 .preview-tile.is-locked {
@@ -1242,6 +1243,60 @@ body {
   outline-offset: 3px;
   transform: scale(1.1);
   box-shadow: 0 0 14px rgba(245, 158, 11, 0.5);
+}
+
+/* Wskaźnik wstawienia pomiędzy kafelkami (Insert / Shift) */
+.preview-tile.drag-insert-left::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  left: -7px;
+  width: 6px;
+  background: #fbbf24;
+  border-radius: 4px;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.95), 0 0 6px #fff;
+  z-index: 30;
+  pointer-events: none;
+  animation: insertBeamGlow 0.7s ease-in-out infinite alternate;
+}
+
+.preview-tile.drag-insert-right::after {
+  content: "";
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  right: -7px;
+  width: 6px;
+  background: #fbbf24;
+  border-radius: 4px;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.95), 0 0 6px #fff;
+  z-index: 30;
+  pointer-events: none;
+  animation: insertBeamGlow 0.7s ease-in-out infinite alternate;
+}
+
+.region-card.drag-insert-left {
+  border-left: 5px solid var(--primary) !important;
+  box-shadow: -10px 0 22px rgba(245, 158, 11, 0.45) !important;
+  transform: translateX(3px);
+}
+
+.region-card.drag-insert-right {
+  border-right: 5px solid var(--primary) !important;
+  box-shadow: 10px 0 22px rgba(245, 158, 11, 0.45) !important;
+  transform: translateX(-3px);
+}
+
+@keyframes insertBeamGlow {
+  from {
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.7), 0 0 2px #fff;
+    opacity: 0.85;
+  }
+  to {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 1), 0 0 8px #fff;
+    opacity: 1;
+  }
 }
 
 /* Cel upuszczenia - zablokowany kłódką (odmowa) */
