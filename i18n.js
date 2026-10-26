@@ -182,7 +182,9 @@ const TRANSLATIONS = {
     toastSyncAdmin: "Zsynchronizowano kolory z komendy admina!",
     toastSyncChat: "Zsynchronizowano kolory z komendy /color!",
     toastHarmonicGenerated: (mode, baseName) => `Wygenerowano harmonię (${mode}) na bazie: ${baseName}! ✨`,
-    toastHarmonyAnchorSet: (idx) => `Region ${idx} oznaczony jako kolor bazowy harmonii ⭐`
+    toastHarmonyAnchorSet: (idx) => `Region ${idx} oznaczony jako kolor bazowy harmonii ⭐`,
+    toastNoActiveRegions: "Żaden region nie jest włączony (aktywny)!",
+    toastRegionInactiveNoRoll: (idx) => `Region ${idx} jest wyłączony (nieaktywny)! Włącz go, aby losować.`
   },
   en: {
     appTitle: "ARK Color Generator",
@@ -364,7 +366,9 @@ const TRANSLATIONS = {
     toastSyncAdmin: "Synchronized colors from admin command!",
     toastSyncChat: "Synchronized colors from /color command!",
     toastHarmonicGenerated: (mode, baseName) => `Generated harmony (${mode}) based on: ${baseName}! ✨`,
-    toastHarmonyAnchorSet: (idx) => `Region ${idx} set as harmony base color ⭐`
+    toastHarmonyAnchorSet: (idx) => `Region ${idx} set as harmony base color ⭐`,
+    toastNoActiveRegions: "No regions are enabled (active)!",
+    toastRegionInactiveNoRoll: (idx) => `Region ${idx} is disabled (inactive)! Enable it to roll.`
   }
 };
 

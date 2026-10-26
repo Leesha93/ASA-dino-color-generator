@@ -233,8 +233,74 @@ function applyMoodToHsl(hsl, moodKey) {
   return { h, s, l };
 }
 
-// Główna funkcja wyliczająca paletę barw dla 6 regionów
-function generateHarmonicPalette(baseColor, modeKey = "auto", moodKey = "auto", pool = null, anchorIndex = 0) {
+// Zwraca definicję przesunięcia HSL dla danego trybu harmonii i kroku (1..5)
+function getModeStepOffset(effectiveMode, stepIndex) {
+  if (effectiveMode === "monochromatic") {
+    const lSteps = [0, 0.22, -0.22, 0.35, -0.32, 0.15];
+    const sSteps = [0, -0.15, 0.18, -0.25, 0.12, -0.05];
+    return {
+      dH: 0,
+      dL: lSteps[stepIndex] || 0.15,
+      dS: sSteps[stepIndex] || 0
+    };
+  }
+  if (effectiveMode === "analogous") {
+    const hOffsets = [0, 28, -28, 48, -48, 15];
+    const lOffsets = [0, 0.14, -0.16, 0.22, -0.24, -0.08];
+    return {
+      dH: hOffsets[stepIndex] || 25,
+      dL: lOffsets[stepIndex] || 0,
+      dS: 0
+    };
+  }
+  if (effectiveMode === "complementary") {
+    // Krok 1: Główny akcent dopełniający (+180 st.)
+    // Krok 2: Spójny analog (-18 st.)
+    // Krok 3: Highlight dopełniający (+195 st.)
+    // Krok 4: Jasny analog (+14 st.)
+    // Krok 5: Rozszczepiony akcent (+165 st.)
+    const hOffsets = [0, 180, -18, 195, 14, 165];
+    const lOffsets = [0, 0.20, -0.18, -0.15, 0.14, 0.10];
+    const sOffsets = [0, 0.15, 0, 0.10, 0, 0.10];
+    return {
+      dH: hOffsets[stepIndex] || 180,
+      dL: lOffsets[stepIndex] || 0,
+      dS: sOffsets[stepIndex] || 0,
+      isComplement: stepIndex === 1 || stepIndex === 3 || stepIndex === 5
+    };
+  }
+  if (effectiveMode === "split") {
+    const offsets = [0, 150, 210, 20, -20, 165];
+    const lOffsets = [0, 0.15, -0.18, -0.15, 0.22, -0.05];
+    return {
+      dH: offsets[stepIndex] || 150,
+      dL: lOffsets[stepIndex] || 0,
+      dS: 0
+    };
+  }
+  if (effectiveMode === "triad") {
+    const triadOffsets = [0, 120, 240, 135, 255, 15];
+    const lOffsets = [0, 0.12, -0.12, -0.18, 0.18, -0.08];
+    return {
+      dH: triadOffsets[stepIndex] || 120,
+      dL: lOffsets[stepIndex] || 0,
+      dS: 0
+    };
+  }
+  return { dH: 0, dL: 0, dS: 0 };
+}
+
+// Główna funkcja wyliczająca paletę barw z respektowaniem tylko aktywnych regionów
+// oraz z dynamicznym mieszaniem ról (shuffleRoles)
+function generateHarmonicPalette(
+  baseColor,
+  modeKey = "auto",
+  moodKey = "auto",
+  pool = null,
+  anchorIndex = 0,
+  activeRegionIndices = [0, 1, 2, 3, 4, 5],
+  shuffleRoles = true
+) {
   const activePool = (pool && pool.length > 0) ? pool : (typeof ARK_COLORS !== "undefined" ? ARK_COLORS : []);
   const rgbBase = hexToRgb(baseColor.hex);
   let hslBase = rgbToHsl(rgbBase.r, rgbBase.g, rgbBase.b);
@@ -251,98 +317,83 @@ function generateHarmonicPalette(baseColor, modeKey = "auto", moodKey = "auto", 
     effectiveMode = choices[Math.floor(Math.random() * choices.length)];
   }
 
-  // Obliczenie docelowych próbek HSL dla kolejnych regionów (0..5)
-  // Biologiczna zasada proporcji:
-  // Slot anchorIndex jest bazą (relStep = 0).
-  // Pozostałe sloty otrzymują harmonijne wariacje relStep = 1..5.
-  const targetHslList = new Array(6);
+  // Upewnij się, że anchorIndex należy do aktywnych regionów
+  const safeActiveIndices = (activeRegionIndices && activeRegionIndices.length > 0)
+    ? [...activeRegionIndices]
+    : [0, 1, 2, 3, 4, 5];
 
-  for (let i = 0; i < 6; i++) {
-    const relStep = (i - anchorIndex + 6) % 6;
-
-    let slotH = hslBase.h;
-    let slotS = hslBase.s;
-    let slotL = hslBase.l;
-
-    if (relStep === 0) {
-      targetHslList[i] = { h: slotH, s: slotS, l: slotL };
-      continue;
-    }
-
-    // Subtelna, wąska wariancja kąta (+/- 4 st.) i jasności (+/- 0.025)
-    // Zapewnia inne ciekawe propozycje przy kolejnych losowaniach,
-    // bez ryzyka rozjechania się reguł harmonii w ograniczonej puli 227 kolorów ARK.
-    const angleJitter = (Math.random() - 0.5) * 8; // -4 do +4 st.
-    const lightJitter = (Math.random() - 0.5) * 0.05; // -0.025 do +0.025
-
-    if (effectiveMode === "monochromatic") {
-      // Ta sama barwa, wyraźne różnice w jasności i nasyceniu
-      const lSteps = [0, 0.22, -0.22, 0.35, -0.32, 0.15];
-      const sSteps = [0, -0.15, 0.18, -0.25, 0.12, -0.05];
-      slotL = Math.max(0.12, Math.min(0.92, slotL + lSteps[relStep] + lightJitter));
-      slotS = Math.max(0.15, Math.min(1.0, slotS + sSteps[relStep]));
-    } else if (effectiveMode === "analogous") {
-      // Kąty +/- 30..50 stopni
-      const hOffsets = [0, 28, -28, 48, -48, 15];
-      const lOffsets = [0, 0.14, -0.16, 0.22, -0.24, -0.08];
-      slotH = (slotH + hOffsets[relStep] + angleJitter + 360) % 360;
-      slotL = Math.max(0.15, Math.min(0.88, slotL + lOffsets[relStep] + lightJitter));
-    } else if (effectiveMode === "complementary") {
-      // Akcenty dopełniające (+180 st.)
-      const isComplement = relStep === 2 || relStep === 4 || relStep === 5;
-      if (isComplement) {
-        slotH = (slotH + 180 + angleJitter + 360) % 360;
-        slotL = Math.max(0.2, Math.min(0.85, (1 - slotL * 0.8) + lightJitter)); // Kontrast jasności
-        slotS = Math.min(1.0, slotS * 1.15);
-      } else {
-        const lVar = relStep === 1 ? -0.18 : 0.14;
-        slotL = Math.max(0.15, Math.min(0.85, slotL + lVar + lightJitter));
-      }
-    } else if (effectiveMode === "split") {
-      // Rozszczepiona: Baza, +150 st., +210 st.
-      const offsets = [0, 20, 150, 210, -20, 165];
-      slotH = (slotH + offsets[relStep] + angleJitter + 360) % 360;
-      const lOffsets = [0, -0.15, 0.15, -0.18, 0.22, -0.05];
-      slotL = Math.max(0.15, Math.min(0.88, slotL + lOffsets[relStep] + lightJitter));
-    } else if (effectiveMode === "triad") {
-      // Triada: 0, 120, 240
-      const triadOffsets = [0, 15, 120, 135, 240, 255];
-      slotH = (slotH + triadOffsets[relStep] + angleJitter + 360) % 360;
-      const lOffsets = [0, -0.18, 0.12, -0.12, 0.18, -0.08];
-      slotL = Math.max(0.15, Math.min(0.88, slotL + lOffsets[relStep] + lightJitter));
-    }
-
-    if (moodKey !== "auto") {
-      const adjusted = applyMoodToHsl({ h: slotH, s: slotS, l: slotL }, moodKey);
-      slotH = adjusted.h;
-      slotS = adjusted.s;
-      slotL = adjusted.l;
-    }
-
-    targetHslList[i] = { h: slotH, s: slotS, l: slotL };
+  if (!safeActiveIndices.includes(anchorIndex)) {
+    anchorIndex = safeActiveIndices[0];
   }
 
-  // Mapowanie wyliczonych barw na najbliższe kolory z puli ARK
+  const resultColors = new Array(6);
   const usedColorIds = new Set();
   const usedHexes = new Set();
-  const resultColors = new Array(6);
 
   // 1. Zarezerwuj bazę w wybranym slocie anchorIndex
   resultColors[anchorIndex] = baseColor;
   usedColorIds.add(baseColor.id);
   usedHexes.add(baseColor.hex.toUpperCase());
 
-  // 2. Dobierz unikalne dopasowania z puli dla pozostałych slotów
-  for (let i = 0; i < 6; i++) {
-    if (i === anchorIndex) continue;
-    const rgb = hslToRgb(targetHslList[i].h, targetHslList[i].s, targetHslList[i].l);
-    const matched = findNearestArkColor(rgb, activePool, usedColorIds, usedHexes);
-    resultColors[i] = matched;
+  // 2. Pobierz pozostałe aktywne regiony (nieaktywne są całkowicie pomijane!)
+  const otherActive = safeActiveIndices.filter(i => i !== anchorIndex);
+  if (otherActive.length === 0) {
+    return {
+      colors: resultColors,
+      mode: effectiveMode,
+      mood: moodKey
+    };
+  }
+
+  // Dostępne kroki harmonii dla tylu aktywnych slotów ile potrzebujemy (1..N)
+  const steps = [];
+  for (let s = 1; s <= otherActive.length; s++) {
+    steps.push(s);
+  }
+
+  // Dynamiczne mieszanie się regionów (tasowanie ról między aktywnymi slotami)
+  if (shuffleRoles) {
+    for (let i = steps.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [steps[i], steps[j]] = [steps[j], steps[i]];
+    }
+  }
+
+  // 3. Wylicz odcienie wyłącznie dla aktywnych slotów
+  otherActive.forEach((slotIdx, idx) => {
+    const assignedStep = steps[idx];
+    const offset = getModeStepOffset(effectiveMode, assignedStep);
+
+    // Subtelna, wąska wariancja kąta (+/- 4 st.) i jasności (+/- 0.025)
+    const angleJitter = (Math.random() - 0.5) * 8; // -4 do +4 st.
+    const lightJitter = (Math.random() - 0.5) * 0.05; // -0.025 do +0.025
+
+    let targetH = (hslBase.h + offset.dH + angleJitter + 360) % 360;
+    let targetS = hslBase.s + (offset.dS || 0);
+    let targetL = hslBase.l;
+
+    if (offset.isComplement) {
+      targetL = Math.max(0.2, Math.min(0.85, (1 - targetL * 0.8) + lightJitter));
+      targetS = Math.min(1.0, targetS * 1.15);
+    } else {
+      targetL = Math.max(0.15, Math.min(0.85, targetL + offset.dL + lightJitter));
+    }
+
+    if (moodKey !== "auto") {
+      const adjusted = applyMoodToHsl({ h: targetH, s: targetS, l: targetL }, moodKey);
+      targetH = adjusted.h;
+      targetS = adjusted.s;
+      targetL = adjusted.l;
+    }
+
+    const rgb = hslToRgb(targetH, targetS, targetL);
+    const matched = findNearestArkColor(rgb, activePool, usedColorIds, usedHexes, true);
+    resultColors[slotIdx] = matched;
     if (matched) {
       usedColorIds.add(matched.id);
       usedHexes.add(matched.hex.toUpperCase());
     }
-  }
+  });
 
   return {
     colors: resultColors,

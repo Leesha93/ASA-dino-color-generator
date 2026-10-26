@@ -732,6 +732,9 @@ function renderRegionsGrid() {
     });
     toggle.addEventListener("change", (e) => {
       reg.enabled = e.target.checked;
+      if (!reg.enabled && state.anchorRegionIndex === reg.regionIndex) {
+        state.anchorRegionIndex = null;
+      }
       updateAll();
     });
     lockBtn.addEventListener("click", () => {
@@ -1599,6 +1602,10 @@ function initPoolCollapseControls() {
 // Losowanie pojedynczego regionu (z uwzględnieniem aktywnej puli)
 function randomizeSingle(regionIdx) {
   const reg = state.regions[regionIdx];
+  if (!reg.enabled) {
+    showToast(t("toastRegionInactiveNoRoll", regionIdx));
+    return;
+  }
   if (reg.locked) {
     showToast(t("toastRegionLockedUnlock", regionIdx));
     return;
@@ -1613,16 +1620,21 @@ function randomizeSingle(regionIdx) {
   updateAll(true);
 }
 
-// Losowanie wszystkich aktywnych regionów (z pominięciem zablokowanych)
+// Losowanie wszystkich aktywnych regionów (z pominięciem zablokowanych i nieaktywnych)
 function randomizeAll() {
   const pool = getFilteredColorPool();
   if (pool.length === 0) {
     showToast(t("toastNoColorsInPool"));
     return;
   }
+  const activeRegions = state.regions.filter(r => r.enabled);
+  if (activeRegions.length === 0) {
+    showToast(t("toastNoActiveRegions"));
+    return;
+  }
   let changedCount = 0;
-  state.regions.forEach((r) => {
-    if (!r.locked && r.enabled) {
+  activeRegions.forEach((r) => {
+    if (!r.locked) {
       r.color = pool[Math.floor(Math.random() * pool.length)];
       changedCount++;
     }
@@ -1636,6 +1648,7 @@ function randomizeAll() {
 }
 
 // Losowanie zaawansowane w oparciu o teorię barw i harmonie
+// z respektowaniem nieaktywnych regionów oraz mieszaniem ról (shuffle)
 function randomizeHarmonic() {
   const pool = getFilteredColorPool();
   if (pool.length === 0) {
@@ -1643,37 +1656,54 @@ function randomizeHarmonic() {
     return;
   }
 
-  // Sprawdź czy użytkownik ma zablokowany region (baza harmonii)
+  // 1. Sprawdź które regiony są w ogóle aktywne
+  const activeRegions = state.regions.filter(r => r.enabled);
+  if (activeRegions.length === 0) {
+    showToast(t("toastNoActiveRegions"));
+    return;
+  }
+
+  // 2. Sprawdź czy są aktywne odblokowane regiony do modyfikacji
   const anchor = getHarmonyAnchorRegion();
+  const unlockedActive = activeRegions.filter(r => !r.locked);
+
+  if (unlockedActive.length === 0 && (!anchor || activeRegions.every(r => r.locked))) {
+    showToast(t("toastAllRegionsLocked"));
+    return;
+  }
+
+  // 3. Wybierz kolor bazowy i slot bazowy (musi to być region włączony!)
   let baseColor = null;
   let anchorIdx = 0;
 
-  if (anchor) {
+  if (anchor && anchor.enabled) {
     baseColor = anchor.color;
     anchorIdx = anchor.regionIndex;
   } else {
-    // Wylosuj nowy kolor bazowy z puli
+    // Jeśli brak zablokowanego, baza trafia na pierwszy aktywny region
+    anchorIdx = activeRegions[0].regionIndex;
     baseColor = pool[Math.floor(Math.random() * pool.length)];
-    anchorIdx = 0;
   }
 
-  // Generuj paletę harmoniczną z modułu colorHarmony
+  const activeIndices = activeRegions.map(r => r.regionIndex);
+
+  // 4. Generuj paletę harmoniczną z uwzględnieniem TYLKO aktywnych regionów i mieszaniem ról
   const harmonicResult = typeof generateHarmonicPalette === "function"
-    ? generateHarmonicPalette(baseColor, state.harmonyRule, state.harmonyMood, pool, anchorIdx)
+    ? generateHarmonicPalette(baseColor, state.harmonyRule, state.harmonyMood, pool, anchorIdx, activeIndices, true)
     : { colors: [baseColor, baseColor, baseColor, baseColor, baseColor, baseColor], mode: "auto" };
 
   let changedCount = 0;
-  state.regions.forEach((r, idx) => {
-    // Nie zmieniaj zablokowanych (w tym bazy jeśli jest zablokowana)
-    if (!r.locked && r.enabled) {
-      if (harmonicResult.colors[idx]) {
-        r.color = harmonicResult.colors[idx];
+  state.regions.forEach((r) => {
+    // Respektuj nieaktywne i zablokowane: zmieniamy TYLKO aktywne i odblokowane sloty!
+    if (r.enabled && !r.locked) {
+      if (harmonicResult.colors[r.regionIndex]) {
+        r.color = harmonicResult.colors[r.regionIndex];
         changedCount++;
       }
     }
   });
 
-  if (changedCount === 0 && (!anchor || state.regions.every(r => r.locked))) {
+  if (changedCount === 0 && activeRegions.every(r => r.locked)) {
     showToast(t("toastAllRegionsLocked"));
     return;
   }
