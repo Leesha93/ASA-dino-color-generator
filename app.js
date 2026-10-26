@@ -94,6 +94,8 @@ const state = {
   favOnlyMode: false,
   excludedColorIds: new Set(), // kolory wykluczone przez użytkownika z losowania
   modalFilter: null, // pojedynczy filtr w modalu
+  compactViewPicker: localStorage.getItem("ark_compact_view_picker") === "true",
+  compactViewPool: localStorage.getItem("ark_compact_view_pool") === "true",
   regions: [
     { regionIndex: 0, color: getColorById(6), enabled: true, locked: false },
     { regionIndex: 1, color: getColorById(1), enabled: true, locked: false },
@@ -1099,10 +1101,69 @@ function getFilteredColorPool() {
   return base.filter(col => !state.excludedColorIds.has(col.id));
 }
 
+// =========================================================
+// Obsługa przełącznika widoku: Standardowy / Kompaktowy (ID jako cień)
+// =========================================================
+function setPickerCompactMode(isCompact) {
+  state.compactViewPicker = !!isCompact;
+  localStorage.setItem("ark_compact_view_picker", state.compactViewPicker ? "true" : "false");
+  updatePickerViewToggleUI();
+  filterAndRenderModalPalette();
+}
+
+function setPoolCompactMode(isCompact) {
+  state.compactViewPool = !!isCompact;
+  localStorage.setItem("ark_compact_view_pool", state.compactViewPool ? "true" : "false");
+  updatePoolViewToggleUI();
+  renderPoolModal();
+}
+
+function updatePickerViewToggleUI() {
+  const toggle = document.getElementById("color-picker-view-toggle");
+  if (!toggle) return;
+  toggle.querySelectorAll(".view-mode-btn").forEach(btn => {
+    const isCompactBtn = btn.dataset.mode === "compact";
+    btn.classList.toggle("active", isCompactBtn === !!state.compactViewPicker);
+  });
+}
+
+function updatePoolViewToggleUI() {
+  const toggle = document.getElementById("pool-view-toggle");
+  if (!toggle) return;
+  toggle.querySelectorAll(".view-mode-btn").forEach(btn => {
+    const isCompactBtn = btn.dataset.mode === "compact";
+    btn.classList.toggle("active", isCompactBtn === !!state.compactViewPool);
+  });
+}
+
+function initViewToggleControls() {
+  const pickerToggle = document.getElementById("color-picker-view-toggle");
+  if (pickerToggle) {
+    pickerToggle.querySelectorAll(".view-mode-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        setPickerCompactMode(btn.dataset.mode === "compact");
+      });
+    });
+  }
+
+  const poolToggle = document.getElementById("pool-view-toggle");
+  if (poolToggle) {
+    poolToggle.querySelectorAll(".view-mode-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        setPoolCompactMode(btn.dataset.mode === "compact");
+      });
+    });
+  }
+
+  updatePickerViewToggleUI();
+  updatePoolViewToggleUI();
+}
+
 // Otwieranie i obsługa modalu zarządzania pulą
 function openPoolModal() {
   const modal = document.getElementById("pool-modal");
   if (!modal) return;
+  updatePoolViewToggleUI();
   renderPoolModal();
   modal.classList.add("active");
 }
@@ -1141,22 +1202,12 @@ function renderPoolModal() {
     return;
   }
 
+  const isCompact = !!state.compactViewPool;
+  grid.classList.toggle("is-compact", isCompact);
+
   fullPool.forEach(col => {
     const isExcluded = state.excludedColorIds.has(col.id);
     const item = document.createElement("div");
-    item.className = `palette-item pool-palette-item ${isExcluded ? "is-excluded" : ""}`;
-    item.title = isExcluded ? "Kliknij, aby PRZYWRÓCIĆ kolor do losowania" : "Kliknij, aby WYKLUCZYĆ kolor z losowania";
-
-    item.innerHTML = `
-      <div class="palette-swatch-wrapper">
-        <div class="palette-swatch" style="background-color: ${col.hex}"></div>
-        <button class="pool-exclude-btn ${isExcluded ? "excluded" : ""}" title="${isExcluded ? "Przywróć do puli" : "Wyklucz z puli"}">
-          ✕
-        </button>
-      </div>
-      <div class="palette-name" title="${col.name}">${col.name}</div>
-      <div class="palette-id">ID: ${col.id}</div>
-    `;
 
     const toggleExclude = (e) => {
       e.stopPropagation();
@@ -1169,9 +1220,33 @@ function renderPoolModal() {
       updateFilterPoolInfo();
     };
 
-    const btn = item.querySelector(".pool-exclude-btn");
-    btn.addEventListener("click", toggleExclude);
-    item.addEventListener("click", toggleExclude);
+    if (isCompact) {
+      const contrast = getContrastColor(col.hex);
+      const bgClass = contrast === "#FFFFFF" ? "dark-bg" : "light-bg";
+      item.className = `palette-item palette-item-compact ${bgClass} ${isExcluded ? "is-excluded" : ""}`;
+      item.style.backgroundColor = col.hex;
+      item.title = `[ID: ${col.id}] ${col.name}${isExcluded ? " — WYKLUCZONY (Kliknij, aby przywrócić)" : " (Kliknij, aby wykluczyć)"}`;
+      item.innerHTML = `<span class="palette-compact-id">${col.id}</span>`;
+      item.addEventListener("click", toggleExclude);
+    } else {
+      item.className = `palette-item pool-palette-item ${isExcluded ? "is-excluded" : ""}`;
+      item.title = isExcluded ? "Kliknij, aby PRZYWRÓCIĆ kolor do losowania" : "Kliknij, aby WYKLUCZYĆ kolor z losowania";
+
+      item.innerHTML = `
+        <div class="palette-swatch-wrapper">
+          <div class="palette-swatch" style="background-color: ${col.hex}"></div>
+          <button class="pool-exclude-btn ${isExcluded ? "excluded" : ""}" title="${isExcluded ? "Przywróć do puli" : "Wyklucz z puli"}">
+            ✕
+          </button>
+        </div>
+        <div class="palette-name" title="${col.name}">${col.name}</div>
+        <div class="palette-id">ID: ${col.id}</div>
+      `;
+
+      const btn = item.querySelector(".pool-exclude-btn");
+      btn.addEventListener("click", toggleExclude);
+      item.addEventListener("click", toggleExclude);
+    }
 
     grid.appendChild(item);
   });
@@ -1376,6 +1451,7 @@ function openColorModal(regionIdx) {
   document.getElementById("modal-title").textContent = `Wybierz kolor dla Regionu ${regionIdx}${poolName}`;
   document.getElementById("color-search").value = "";
   renderModalFilterChips();
+  updatePickerViewToggleUI();
   filterAndRenderModalPalette();
   document.getElementById("color-modal").classList.add("active");
   document.getElementById("color-search").focus();
@@ -1479,43 +1555,70 @@ function renderPalette(list) {
     return;
   }
 
+  const isCompact = !!state.compactViewPicker;
+  container.classList.toggle("is-compact", isCompact);
+
   const favs = getFavoriteColorIds();
+  const activeColorId = state.activeModalRegion !== null && state.regions[state.activeModalRegion].enabled
+    ? state.regions[state.activeModalRegion].color.id
+    : null;
 
   list.forEach((col) => {
     const item = document.createElement("div");
-    item.className = "palette-item";
-    const isFav = favs.has(col.id);
+    const isSelected = activeColorId === col.id;
 
-    item.innerHTML = `
-      <div class="palette-swatch-wrapper">
-        <div class="palette-swatch" style="background-color: ${col.hex}"></div>
-        <button class="palette-fav-btn ${isFav ? "is-fav" : ""}" title="${isFav ? "Usuń z ulubionych" : "Dodaj do ulubionych"}">
-          ${isFav ? "★" : "☆"}
-        </button>
-      </div>
-      <div class="palette-name" title="${col.name}">${col.name}</div>
-      <div class="palette-id">ID: ${col.id}</div>
-    `;
+    if (isCompact) {
+      const contrast = getContrastColor(col.hex);
+      const bgClass = contrast === "#FFFFFF" ? "dark-bg" : "light-bg";
+      item.className = `palette-item palette-item-compact ${bgClass} ${isSelected ? "is-selected" : ""}`;
+      item.style.backgroundColor = col.hex;
+      item.title = `[ID: ${col.id}] ${col.name} (Kliknij, aby wybrać)`;
+      item.innerHTML = `<span class="palette-compact-id">${col.id}</span>`;
 
-    // Kliknięcie w gwiazdkę
-    const favBtn = item.querySelector(".palette-fav-btn");
-    favBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleFavoriteColor(col.id);
-      updateModalFilterChips();
-      filterAndRenderModalPalette();
-      updateFilterPoolInfo();
-    });
+      // Kliknięcie w kafelek
+      item.addEventListener("click", () => {
+        if (state.activeModalRegion !== null) {
+          state.regions[state.activeModalRegion].color = col;
+          state.regions[state.activeModalRegion].enabled = true;
+          closeModal();
+          updateAll(true);
+        }
+      });
+    } else {
+      item.className = `palette-item ${isSelected ? "is-selected" : ""}`;
+      const isFav = favs.has(col.id);
 
-    // Kliknięcie w kafelek
-    item.addEventListener("click", () => {
-      if (state.activeModalRegion !== null) {
-        state.regions[state.activeModalRegion].color = col;
-        state.regions[state.activeModalRegion].enabled = true;
-        closeModal();
-        updateAll(true);
-      }
-    });
+      item.innerHTML = `
+        <div class="palette-swatch-wrapper">
+          <div class="palette-swatch" style="background-color: ${col.hex}"></div>
+          <button class="palette-fav-btn ${isFav ? "is-fav" : ""}" title="${isFav ? "Usuń z ulubionych" : "Dodaj do ulubionych"}">
+            ${isFav ? "★" : "☆"}
+          </button>
+        </div>
+        <div class="palette-name" title="${col.name}">${col.name}</div>
+        <div class="palette-id">ID: ${col.id}</div>
+      `;
+
+      // Kliknięcie w gwiazdkę
+      const favBtn = item.querySelector(".palette-fav-btn");
+      favBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleFavoriteColor(col.id);
+        updateModalFilterChips();
+        filterAndRenderModalPalette();
+        updateFilterPoolInfo();
+      });
+
+      // Kliknięcie w kafelek
+      item.addEventListener("click", () => {
+        if (state.activeModalRegion !== null) {
+          state.regions[state.activeModalRegion].color = col;
+          state.regions[state.activeModalRegion].enabled = true;
+          closeModal();
+          updateAll(true);
+        }
+      });
+    }
 
     container.appendChild(item);
   });
@@ -1685,10 +1788,12 @@ window.addEventListener("keydown", (e) => {
     if (state.activeModalRegion !== null) closeModal();
     closeLibraryModal();
     closeSaveNameModal();
+    closePoolModal();
   }
 });
 
 // Inicjalizacja
+initViewToggleControls();
 renderFilterChips();
 updateLibraryBadges();
 randomizeAll();

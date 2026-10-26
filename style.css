@@ -797,10 +797,14 @@ body {
 .modal-search {
   padding: 12px 20px;
   border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .modal-search input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   background: #090c12;
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -894,6 +898,185 @@ body {
 .palette-id {
   font-size: 0.75rem;
   color: var(--text-muted);
+}
+
+/* =========================================================
+   Przełącznik widoku: Standardowy vs Kompaktowy (z ID jako cień)
+   ========================================================= */
+
+.view-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: #0d0f14;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 3px;
+  gap: 3px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.view-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.view-mode-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.view-mode-btn.active {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.25);
+}
+
+.view-mode-btn .view-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.view-mode-btn .view-text {
+  font-size: 0.8rem;
+  letter-spacing: 0.2px;
+}
+
+/* Wyróżnienie aktywnego / wybranego kafelka w modalu wyboru */
+.palette-item.is-selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.4), 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+/* Kompaktowa siatka palety (zarówno w oknie wyboru jak i puli) */
+.color-palette-grid.is-compact,
+.pool-palette-grid.is-compact {
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 6px;
+  padding: 12px 18px;
+}
+
+@media (min-width: 768px) {
+  .color-palette-grid.is-compact,
+  .pool-palette-grid.is-compact {
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+    gap: 7px;
+  }
+}
+
+/* Pojedynczy kafelek kompaktowy */
+.palette-item.palette-item-compact {
+  padding: 0;
+  aspect-ratio: 1;
+  min-height: 42px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+  user-select: none;
+}
+
+.palette-item.palette-item-compact:hover {
+  transform: scale(1.18);
+  z-index: 10;
+  border-color: #ffffff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.palette-item.palette-item-compact.is-selected {
+  border-color: #fbbf24 !important;
+  box-shadow: 0 0 0 2px #fbbf24, 0 0 12px rgba(245, 158, 11, 0.8);
+  transform: scale(1.08);
+  z-index: 5;
+}
+
+/* ID koloru – Opcja 4: Mini-plakietka w prawym dolnym rogu (Pigułka / Chiclet badge) */
+.palette-compact-id {
+  position: absolute;
+  bottom: 2px;
+  right: 3px;
+  background: rgba(0, 0, 0, 0.58);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: -0.2px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1.1;
+  pointer-events: none;
+  user-select: none;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  transition: all 0.12s ease;
+  z-index: 2;
+}
+
+.palette-item.palette-item-compact:hover .palette-compact-id {
+  background: rgba(0, 0, 0, 0.82);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+  transform: scale(1.06);
+}
+
+/* Wykluczony kafelek w wersji kompaktowej (podgląd i zarządzanie pulą) */
+.palette-item.palette-item-compact.is-excluded {
+  opacity: 0.32;
+  filter: grayscale(0.85);
+  border: 1.5px dashed #ef4444 !important;
+  box-shadow: inset 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.palette-item.palette-item-compact.is-excluded::after {
+  content: "✕";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ef4444;
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 4px #000000, 0 0 8px rgba(239, 68, 68, 0.8);
+  pointer-events: none;
+}
+
+@media (max-width: 520px) {
+  .modal-search {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .modal-search input {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+  .modal-search .view-mode-toggle {
+    margin-left: auto;
+  }
+  .view-mode-btn {
+    padding: 4px 8px;
+    font-size: 0.78rem;
+  }
 }
 
 /* Toast */

@@ -6,7 +6,7 @@
   <title>ARK Dino Color Generator</title>
   <link rel="icon" type="image/png" href="favicon.png?v=4">
   <link rel="alternate icon" href="favicon.ico?v=4">
-  <link rel="stylesheet" href="style.css?v=20261026_05">
+  <link rel="stylesheet" href="style.css?v=20261026_07">
 </head>
 <body>
   <div class="app-container">
@@ -147,6 +147,16 @@
       </div>
       <div class="modal-search">
         <input type="text" id="color-search" placeholder="Szukaj po nazwie lub ID (np. Red, Blue, 12)..." autofocus>
+        <div class="view-mode-toggle" id="color-picker-view-toggle">
+          <button type="button" class="view-mode-btn active" data-mode="normal" title="Widok standardowy z nazwami">
+            <span class="view-icon">⊞</span>
+            <span class="view-text">Standard</span>
+          </button>
+          <button type="button" class="view-mode-btn" data-mode="compact" title="Widok kompaktowy (ID jako cień)">
+            <span class="view-icon">▦</span>
+            <span class="view-text">Kompakt</span>
+          </button>
+        </div>
       </div>
       <div class="modal-category-filters" id="modal-category-filters">
         <!-- Generowane tagi filtrów w oknie wyboru -->
@@ -210,6 +220,16 @@
       <div class="pool-modal-toolbar">
         <div class="pool-stats-badge" id="pool-stats-badge">Aktywne: 227 / Wykluczone: 0</div>
         <div class="pool-toolbar-actions">
+          <div class="view-mode-toggle" id="pool-view-toggle">
+            <button type="button" class="view-mode-btn active" data-mode="normal" title="Widok standardowy z nazwami">
+              <span class="view-icon">⊞</span>
+              <span class="view-text">Standard</span>
+            </button>
+            <button type="button" class="view-mode-btn" data-mode="compact" title="Widok kompaktowy (ID jako cień)">
+              <span class="view-icon">▦</span>
+              <span class="view-text">Kompakt</span>
+            </button>
+          </div>
           <button class="btn btn-secondary btn-sm" id="btn-reset-excluded">🔄 Przywróć wszystkie wykluczone</button>
         </div>
       </div>
@@ -223,6 +243,6 @@
   <div class="toast" id="toast">Skopiowano do schowka!</div>
 
   <script src="colors.js?v=20261016_17"></script>
-  <script src="app.js?v=20261016_25"></script>
+  <script src="app.js?v=20261026_26"></script>
 </body>
 </html>
