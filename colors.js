@@ -1969,3 +1969,8 @@ const ARK_COLORS = [
     ]
   }
 ].sort((a, b) => a.id - b.id);
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { ARK_COLORS };
+}
+
