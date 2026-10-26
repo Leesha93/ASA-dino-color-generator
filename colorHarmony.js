@@ -128,10 +128,10 @@ function getCachedLab(color) {
 }
 
 // Znalezienie najbliższego koloru z puli ARK dla docelowego RGB/Lab
-function findNearestArkColor(targetRgb, pool, excludedIds = new Set(), usedHexes = new Set()) {
+// z wąską, kontrolowaną wariancją (wybór z 2-3 najbliższych kandydatów o zbliżonym odcieniu)
+function findNearestArkColor(targetRgb, pool, excludedIds = new Set(), usedHexes = new Set(), allowSubtleVariance = true) {
   const targetLab = rgbToLab(targetRgb.r, targetRgb.g, targetRgb.b);
-  let bestColor = null;
-  let bestDist = Infinity;
+  const candidates = [];
 
   // 1. Spróbuj w dostępnej puli (bez użytych ID ani tego samego odcienia HEX)
   for (const c of pool) {
@@ -139,38 +139,47 @@ function findNearestArkColor(targetRgb, pool, excludedIds = new Set(), usedHexes
     if (usedHexes && usedHexes.has(c.hex.toUpperCase())) continue;
     const cLab = getCachedLab(c);
     const dist = deltaE(targetLab, cLab);
-    if (dist < bestDist) {
-      bestDist = dist;
-      bestColor = c;
-    }
+    candidates.push({ color: c, dist });
   }
 
   // 2. Jeśli nie znaleziono (wszystkie unikalne wyczerpane), dopuść inne ID o ile jeszcze nie użyte
-  if (!bestColor && pool.length > 0) {
+  if (candidates.length === 0 && pool.length > 0) {
     for (const c of pool) {
       if (excludedIds.has(c.id)) continue;
       const cLab = getCachedLab(c);
-      const dist = deltaE(targetLab, cLab);
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestColor = c;
-      }
+      candidates.push({ color: c, dist: deltaE(targetLab, cLab) });
     }
   }
 
-  // 3. Fallback
-  if (!bestColor && pool.length > 0) {
+  // 3. Fallback na całą pulę
+  if (candidates.length === 0 && pool.length > 0) {
     for (const c of pool) {
       const cLab = getCachedLab(c);
-      const dist = deltaE(targetLab, cLab);
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestColor = c;
-      }
+      candidates.push({ color: c, dist: deltaE(targetLab, cLab) });
     }
   }
 
-  return bestColor || pool[0];
+  if (candidates.length === 0) return pool[0];
+
+  candidates.sort((a, b) => a.dist - b.dist);
+  const bestDist = candidates[0].dist;
+
+  // Wąskie zawężenie: bierzemy wyłącznie kandydatów leżących niemal identycznie blisko (DeltaE <= bestDist + 4.5, max 3)
+  if (allowSubtleVariance) {
+    const closeCandidates = candidates.filter(c => c.dist <= bestDist + 4.5).slice(0, 3);
+    if (closeCandidates.length === 1) {
+      return closeCandidates[0].color;
+    }
+    const rand = Math.random();
+    if (closeCandidates.length === 2) {
+      return rand < 0.70 ? closeCandidates[0].color : closeCandidates[1].color;
+    }
+    if (rand < 0.62) return closeCandidates[0].color;
+    if (rand < 0.88) return closeCandidates[1].color;
+    return closeCandidates[2].color;
+  }
+
+  return candidates[0].color;
 }
 
 // =========================================================
@@ -225,7 +234,7 @@ function applyMoodToHsl(hsl, moodKey) {
 }
 
 // Główna funkcja wyliczająca paletę barw dla 6 regionów
-function generateHarmonicPalette(baseColor, modeKey = "auto", moodKey = "auto", pool = null, activeSlots = [0, 1, 2, 3, 4, 5]) {
+function generateHarmonicPalette(baseColor, modeKey = "auto", moodKey = "auto", pool = null, anchorIndex = 0) {
   const activePool = (pool && pool.length > 0) ? pool : (typeof ARK_COLORS !== "undefined" ? ARK_COLORS : []);
   const rgbBase = hexToRgb(baseColor.hex);
   let hslBase = rgbToHsl(rgbBase.r, rgbBase.g, rgbBase.b);
@@ -243,49 +252,64 @@ function generateHarmonicPalette(baseColor, modeKey = "auto", moodKey = "auto", 
   }
 
   // Obliczenie docelowych próbek HSL dla kolejnych regionów (0..5)
-  // Biologiczna zasada proporcji: R0 (ciało), R1 (grzbiet/paski), R2 (podbrzusze/akcent), R3 (skrzydła/płetwy), R4 (szpony/rogi), R5 (akcenty)
-  const targetHslList = [];
+  // Biologiczna zasada proporcji:
+  // Slot anchorIndex jest bazą (relStep = 0).
+  // Pozostałe sloty otrzymują harmonijne wariacje relStep = 1..5.
+  const targetHslList = new Array(6);
 
   for (let i = 0; i < 6; i++) {
+    const relStep = (i - anchorIndex + 6) % 6;
+
     let slotH = hslBase.h;
     let slotS = hslBase.s;
     let slotL = hslBase.l;
+
+    if (relStep === 0) {
+      targetHslList[i] = { h: slotH, s: slotS, l: slotL };
+      continue;
+    }
+
+    // Subtelna, wąska wariancja kąta (+/- 4 st.) i jasności (+/- 0.025)
+    // Zapewnia inne ciekawe propozycje przy kolejnych losowaniach,
+    // bez ryzyka rozjechania się reguł harmonii w ograniczonej puli 227 kolorów ARK.
+    const angleJitter = (Math.random() - 0.5) * 8; // -4 do +4 st.
+    const lightJitter = (Math.random() - 0.5) * 0.05; // -0.025 do +0.025
 
     if (effectiveMode === "monochromatic") {
       // Ta sama barwa, wyraźne różnice w jasności i nasyceniu
       const lSteps = [0, 0.22, -0.22, 0.35, -0.32, 0.15];
       const sSteps = [0, -0.15, 0.18, -0.25, 0.12, -0.05];
-      slotL = Math.max(0.12, Math.min(0.92, slotL + lSteps[i]));
-      slotS = Math.max(0.15, Math.min(1.0, slotS + sSteps[i]));
+      slotL = Math.max(0.12, Math.min(0.92, slotL + lSteps[relStep] + lightJitter));
+      slotS = Math.max(0.15, Math.min(1.0, slotS + sSteps[relStep]));
     } else if (effectiveMode === "analogous") {
       // Kąty +/- 30..50 stopni
       const hOffsets = [0, 28, -28, 48, -48, 15];
       const lOffsets = [0, 0.14, -0.16, 0.22, -0.24, -0.08];
-      slotH = (slotH + hOffsets[i] + 360) % 360;
-      slotL = Math.max(0.15, Math.min(0.88, slotL + lOffsets[i]));
+      slotH = (slotH + hOffsets[relStep] + angleJitter + 360) % 360;
+      slotL = Math.max(0.15, Math.min(0.88, slotL + lOffsets[relStep] + lightJitter));
     } else if (effectiveMode === "complementary") {
-      // 0, 1 = kolor bazowy i jego odcień; 2, 4, 5 = akcenty dopełniające (+180 st.)
-      const isComplement = i === 2 || i === 4 || i === 5;
+      // Akcenty dopełniające (+180 st.)
+      const isComplement = relStep === 2 || relStep === 4 || relStep === 5;
       if (isComplement) {
-        slotH = (slotH + 180) % 360;
-        slotL = Math.max(0.2, Math.min(0.85, 1 - slotL * 0.8)); // Kontrast jasności
+        slotH = (slotH + 180 + angleJitter + 360) % 360;
+        slotL = Math.max(0.2, Math.min(0.85, (1 - slotL * 0.8) + lightJitter)); // Kontrast jasności
         slotS = Math.min(1.0, slotS * 1.15);
       } else {
-        const lVar = i === 1 ? -0.18 : 0;
-        slotL = Math.max(0.15, Math.min(0.85, slotL + lVar));
+        const lVar = relStep === 1 ? -0.18 : 0.14;
+        slotL = Math.max(0.15, Math.min(0.85, slotL + lVar + lightJitter));
       }
     } else if (effectiveMode === "split") {
       // Rozszczepiona: Baza, +150 st., +210 st.
       const offsets = [0, 20, 150, 210, -20, 165];
-      slotH = (slotH + offsets[i] + 360) % 360;
+      slotH = (slotH + offsets[relStep] + angleJitter + 360) % 360;
       const lOffsets = [0, -0.15, 0.15, -0.18, 0.22, -0.05];
-      slotL = Math.max(0.15, Math.min(0.88, slotL + lOffsets[i]));
+      slotL = Math.max(0.15, Math.min(0.88, slotL + lOffsets[relStep] + lightJitter));
     } else if (effectiveMode === "triad") {
       // Triada: 0, 120, 240
       const triadOffsets = [0, 15, 120, 135, 240, 255];
-      slotH = (slotH + triadOffsets[i] + 360) % 360;
+      slotH = (slotH + triadOffsets[relStep] + angleJitter + 360) % 360;
       const lOffsets = [0, -0.18, 0.12, -0.12, 0.18, -0.08];
-      slotL = Math.max(0.15, Math.min(0.88, slotL + lOffsets[i]));
+      slotL = Math.max(0.15, Math.min(0.88, slotL + lOffsets[relStep] + lightJitter));
     }
 
     if (moodKey !== "auto") {
@@ -295,18 +319,25 @@ function generateHarmonicPalette(baseColor, modeKey = "auto", moodKey = "auto", 
       slotL = adjusted.l;
     }
 
-    targetHslList.push({ h: slotH, s: slotS, l: slotL });
+    targetHslList[i] = { h: slotH, s: slotS, l: slotL };
   }
 
   // Mapowanie wyliczonych barw na najbliższe kolory z puli ARK
   const usedColorIds = new Set();
   const usedHexes = new Set();
-  const resultColors = [];
+  const resultColors = new Array(6);
 
+  // 1. Zarezerwuj bazę w wybranym slocie anchorIndex
+  resultColors[anchorIndex] = baseColor;
+  usedColorIds.add(baseColor.id);
+  usedHexes.add(baseColor.hex.toUpperCase());
+
+  // 2. Dobierz unikalne dopasowania z puli dla pozostałych slotów
   for (let i = 0; i < 6; i++) {
+    if (i === anchorIndex) continue;
     const rgb = hslToRgb(targetHslList[i].h, targetHslList[i].s, targetHslList[i].l);
     const matched = findNearestArkColor(rgb, activePool, usedColorIds, usedHexes);
-    resultColors.push(matched);
+    resultColors[i] = matched;
     if (matched) {
       usedColorIds.add(matched.id);
       usedHexes.add(matched.hex.toUpperCase());

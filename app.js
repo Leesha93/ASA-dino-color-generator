@@ -137,6 +137,7 @@ const state = {
   poolCollapsed: localStorage.getItem("ark_pool_collapsed") === "true",
   harmonyRule: localStorage.getItem("ark_harmony_rule") || "auto",
   harmonyMood: localStorage.getItem("ark_harmony_mood") || "auto",
+  anchorRegionIndex: null, // Dowolny region 0-5 wybrany/zablokowany jako baza harmonii
   regions: [
     { regionIndex: 0, color: getColorById(6), enabled: true, locked: false },
     { regionIndex: 1, color: getColorById(1), enabled: true, locked: false },
@@ -540,14 +541,22 @@ function attachCardDragAndDrop(card, swatch, reg) {
 
 // Funkcja wyznaczająca kolor bazowy (kotwicę) harmonii
 function getHarmonyAnchorRegion() {
+  // Sprawdź czy zapamiętany region bazowy jest aktywny i zablokowany
+  if (state.anchorRegionIndex !== null && state.anchorRegionIndex !== undefined) {
+    const reg = state.regions[state.anchorRegionIndex];
+    if (reg && reg.enabled && reg.locked) {
+      return reg;
+    }
+  }
+
+  // Jeśli nie, znajdź pierwszy zablokowany i aktywny
   const lockedActive = state.regions.filter(r => r.enabled && r.locked);
-  if (lockedActive.length === 1) {
+  if (lockedActive.length > 0) {
+    state.anchorRegionIndex = lockedActive[0].regionIndex;
     return lockedActive[0];
   }
-  if (lockedActive.length > 1) {
-    // Pierwszy zablokowany
-    return lockedActive[0];
-  }
+
+  state.anchorRegionIndex = null;
   return null;
 }
 
@@ -567,7 +576,7 @@ function updateHarmonyUI() {
 
   if (badge) {
     if (anchor) {
-      badge.textContent = `⭐ Baza: R${anchor.regionIndex} (${anchor.color.name})`;
+      badge.textContent = t("harmonyBaseBadgeText", anchor.regionIndex, anchor.color.name);
       badge.classList.add("is-active-anchor");
     } else {
       badge.textContent = t("harmonyAnchorTooltip");
@@ -590,7 +599,7 @@ function renderPreviewBar() {
     const lockIcon = isAnchor ? " ⭐" : (reg.locked ? " 🔒" : "");
 
     if (isAnchor) {
-      tile.title = `Region R${reg.regionIndex}: ${reg.color.name} (⭐ Baza Harmonii) • Kliknij lub przeciągnij`;
+      tile.title = t("tip_tile_anchor", reg.regionIndex, reg.color.name);
     } else if (reg.locked) {
       tile.title = t("tip_tile_locked", reg.regionIndex);
     } else if (!reg.enabled) {
@@ -648,7 +657,7 @@ function renderRegionsGrid() {
 
     let swatchTitle = t("tip_swatch_active");
     if (isAnchor) {
-      swatchTitle = `⭐ Region R${reg.regionIndex} (${reg.color.name}) - Baza Harmonii!`;
+      swatchTitle = t("tip_swatch_anchor", reg.regionIndex, reg.color.name);
     } else if (reg.locked) {
       swatchTitle = t("tip_swatch_locked");
     } else if (!reg.enabled) {
@@ -657,7 +666,7 @@ function renderRegionsGrid() {
 
     const lockIconChar = isAnchor ? "⭐" : (reg.locked ? "🔒" : "🔓");
     const lockBtnTitle = isAnchor
-      ? "Główny kolor bazowy harmonii (kliknij, aby odblokować)"
+      ? t("tip_lock_anchor")
       : (reg.locked ? t("tip_lock_locked") : t("tip_lock_unlocked"));
 
     card.innerHTML = `
@@ -727,6 +736,11 @@ function renderRegionsGrid() {
     });
     lockBtn.addEventListener("click", () => {
       reg.locked = !reg.locked;
+      if (reg.locked) {
+        state.anchorRegionIndex = reg.regionIndex;
+      } else if (state.anchorRegionIndex === reg.regionIndex) {
+        state.anchorRegionIndex = null;
+      }
       renderRegionsGrid();
       renderPreviewBar();
       updateHarmonyUI();
@@ -1632,17 +1646,20 @@ function randomizeHarmonic() {
   // Sprawdź czy użytkownik ma zablokowany region (baza harmonii)
   const anchor = getHarmonyAnchorRegion();
   let baseColor = null;
+  let anchorIdx = 0;
 
   if (anchor) {
     baseColor = anchor.color;
+    anchorIdx = anchor.regionIndex;
   } else {
     // Wylosuj nowy kolor bazowy z puli
     baseColor = pool[Math.floor(Math.random() * pool.length)];
+    anchorIdx = 0;
   }
 
   // Generuj paletę harmoniczną z modułu colorHarmony
   const harmonicResult = typeof generateHarmonicPalette === "function"
-    ? generateHarmonicPalette(baseColor, state.harmonyRule, state.harmonyMood, pool)
+    ? generateHarmonicPalette(baseColor, state.harmonyRule, state.harmonyMood, pool, anchorIdx)
     : { colors: [baseColor, baseColor, baseColor, baseColor, baseColor, baseColor], mode: "auto" };
 
   let changedCount = 0;
@@ -2054,7 +2071,9 @@ function setLanguage(lang) {
   try {
     localStorage.setItem("ark_lang", lang);
   } catch (e) {}
-  document.documentElement.lang = lang;
+  if (document.documentElement) {
+    document.documentElement.lang = lang;
+  }
 
   // Aktualizacja przycisków przełącznika
   document.querySelectorAll(".lang-btn").forEach(btn => {
