@@ -183,13 +183,26 @@ body {
   justify-content: space-between;
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.4);
-  transition: transform 0.2s;
-  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, outline 0.15s, opacity 0.2s;
+  cursor: grab;
   min-height: 60px;
+  user-select: none;
+}
+
+.preview-tile.is-locked {
+  cursor: pointer;
+}
+
+.preview-tile:not(.is-locked):active {
+  cursor: grabbing;
 }
 
 .preview-tile:hover {
   transform: scale(1.02);
+}
+
+.preview-tile * {
+  pointer-events: none;
 }
 
 .preview-tile .tile-header {
@@ -645,10 +658,19 @@ body {
   height: 56px;
   border-radius: 8px;
   border: 2px solid rgba(255, 255, 255, 0.2);
-  cursor: pointer;
+  cursor: grab;
   flex-shrink: 0;
   box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.5);
-  transition: transform 0.15s;
+  transition: transform 0.15s, outline 0.15s, box-shadow 0.15s, opacity 0.15s;
+  user-select: none;
+}
+
+.color-swatch-large.is-locked {
+  cursor: pointer;
+}
+
+.color-swatch-large:not(.is-locked):active {
+  cursor: grabbing;
 }
 
 .color-swatch-large:hover {
@@ -1172,4 +1194,151 @@ body {
   color: #ffffff;
   border-color: #ef4444;
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+/* =========================================================
+   Obsługa Drag & Drop (Zamiana kolorów między regionami)
+   ========================================================= */
+
+.preview-hint {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  user-select: none;
+  opacity: 0.85;
+}
+
+/* Element w trakcie przeciągania */
+.preview-tile.is-dragging,
+.color-swatch-large.is-dragging {
+  opacity: 0.35 !important;
+  transform: scale(0.94) !important;
+  cursor: grabbing !important;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Cel upuszczenia - poprawny (niezablokowany) */
+.preview-tile.drag-over {
+  outline: 2px dashed var(--primary) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.6) !important;
+  transform: scale(1.05) !important;
+  z-index: 5;
+}
+
+.region-card.drag-over {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.35) !important;
+  transform: translateY(-2px);
+}
+
+.region-card.drag-over .color-swatch-large {
+  outline: 2px dashed var(--primary);
+  outline-offset: 3px;
+  transform: scale(1.1);
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.5);
+}
+
+/* Cel upuszczenia - zablokowany kłódką (odmowa) */
+.preview-tile.drag-locked {
+  outline: 2px dashed #ef4444 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.5) !important;
+  cursor: not-allowed !important;
+}
+
+.region-card.drag-locked {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.35) !important;
+  cursor: not-allowed !important;
+}
+
+.region-card.drag-locked .color-swatch-large {
+  outline: 2px dashed #ef4444;
+  outline-offset: 3px;
+  cursor: not-allowed !important;
+}
+
+/* Globalny stan przeciągania na stronie */
+body.is-color-dragging {
+  user-select: none;
+}
+
+body.is-color-dragging,
+body.is-color-dragging * {
+  cursor: grabbing !important;
+}
+
+body.is-color-dragging .preview-tile.is-locked,
+body.is-color-dragging .region-card.is-locked {
+  opacity: 0.6;
+}
+
+body.is-color-dragging .preview-tile.drag-locked,
+body.is-color-dragging .region-card.drag-locked,
+body.is-color-dragging .region-card.drag-locked * {
+  cursor: not-allowed !important;
+}
+
+/* Pływająca wizualizacja trzymanego kafelka pod kursorem (Desktop & Touch) */
+.cursor-drag-badge,
+.touch-drag-avatar {
+  position: fixed;
+  pointer-events: none;
+  z-index: 999999;
+  width: 140px;
+  min-height: 52px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.75), 0 0 18px rgba(245, 158, 11, 0.55);
+  transform: translate(-50%, -50%) rotate(2.5deg) scale(1.06);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  user-select: none;
+}
+
+.cursor-drag-badge .drag-badge-header,
+.touch-drag-avatar .drag-badge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  gap: 4px;
+}
+
+.cursor-drag-badge .drag-badge-region,
+.touch-drag-avatar .drag-badge-region {
+  background: rgba(0, 0, 0, 0.35);
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.cursor-drag-badge .drag-badge-id,
+.touch-drag-avatar .drag-badge-id {
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0.95;
+}
+
+.cursor-drag-badge .drag-badge-name,
+.touch-drag-avatar .drag-badge-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  margin-top: 4px;
 }

@@ -114,6 +114,327 @@ function getContrastColor(hexColor) {
   return yiq >= 128 ? "#000000" : "#FFFFFF";
 }
 
+// =========================================================
+// Obsługa Drag & Drop (Zamiana kolorów między regionami)
+// =========================================================
+let isDraggingColor = false;
+let draggedRegionIndex = null;
+let floatingDragBadge = null;
+
+// Pływający kafel podążający za kursorem podczas przeciągania
+function createFloatingBadge(reg, x, y) {
+  removeFloatingBadge();
+
+  floatingDragBadge = document.createElement("div");
+  floatingDragBadge.className = "cursor-drag-badge";
+  const textCol = getContrastColor(reg.color.hex);
+  floatingDragBadge.style.backgroundColor = reg.color.hex;
+  floatingDragBadge.style.color = textCol;
+
+  floatingDragBadge.innerHTML = `
+    <div class="drag-badge-header">
+      <span class="drag-badge-region" style="color: ${textCol}">R${reg.regionIndex}</span>
+      <span class="drag-badge-id" style="color: ${textCol}">ID: ${reg.color.id}</span>
+    </div>
+    <div class="drag-badge-name" style="color: ${textCol}">${reg.color.name}</div>
+  `;
+
+  document.body.appendChild(floatingDragBadge);
+  if (x && y) {
+    updateFloatingBadgePos(x, y);
+  }
+}
+
+function updateFloatingBadgePos(x, y) {
+  if (!floatingDragBadge || !x || !y) return;
+  floatingDragBadge.style.left = `${x}px`;
+  floatingDragBadge.style.top = `${y}px`;
+}
+
+function removeFloatingBadge() {
+  if (floatingDragBadge) {
+    floatingDragBadge.remove();
+    floatingDragBadge = null;
+  }
+}
+
+// Globalne śledzenie ruchu kursora podczas operacji Drag & Drop
+window.addEventListener("dragover", (e) => {
+  if (floatingDragBadge) {
+    updateFloatingBadgePos(e.clientX, e.clientY);
+  }
+});
+
+window.addEventListener("drag", (e) => {
+  if (floatingDragBadge && e.clientX > 0 && e.clientY > 0) {
+    updateFloatingBadgePos(e.clientX, e.clientY);
+  }
+});
+
+window.addEventListener("drop", removeFloatingBadge);
+window.addEventListener("dragend", removeFloatingBadge);
+
+// 1x1 przezroczysty obrazek ukrywający domyślny, blady duch przeglądarki
+const transparentDragImg = new Image();
+transparentDragImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
+// Obsługa przeciągania na ekranach dotykowych (Mobile / Touch)
+function setupTouchDrag(element, regionIndex, colorHex) {
+  let touchStartPos = null;
+  let isMoving = false;
+  let avatar = null;
+  let currentTargetEl = null;
+
+  element.addEventListener("touchstart", (e) => {
+    if (state.regions[regionIndex].locked) return;
+    const touch = e.touches[0];
+    touchStartPos = { x: touch.clientX, y: touch.clientY };
+    isMoving = false;
+  }, { passive: true });
+
+  element.addEventListener("touchmove", (e) => {
+    if (!touchStartPos) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - touchStartPos.x;
+    const dy = touch.clientY - touchStartPos.y;
+
+    if (!isMoving) {
+      if (Math.hypot(dx, dy) > 10) {
+        isMoving = true;
+        isDraggingColor = true;
+        draggedRegionIndex = regionIndex;
+        document.body.classList.add("is-color-dragging");
+
+        const regObj = state.regions[regionIndex];
+        avatar = document.createElement("div");
+        avatar.className = "cursor-drag-badge touch-drag-avatar";
+        avatar.style.backgroundColor = colorHex;
+        const textCol = getContrastColor(colorHex);
+        avatar.style.color = textCol;
+        avatar.innerHTML = `
+          <div class="drag-badge-header">
+            <span class="drag-badge-region" style="color: ${textCol}">R${regionIndex}</span>
+            <span class="drag-badge-id" style="color: ${textCol}">ID: ${regObj.color.id}</span>
+          </div>
+          <div class="drag-badge-name" style="color: ${textCol}">${regObj.color.name}</div>
+        `;
+        document.body.appendChild(avatar);
+      }
+    }
+
+    if (isMoving && avatar) {
+      if (e.cancelable) e.preventDefault();
+      avatar.style.left = `${touch.clientX}px`;
+      avatar.style.top = `${touch.clientY}px`;
+
+      const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+      const targetCandidate = elBelow?.closest("[data-reg]");
+
+      if (currentTargetEl && currentTargetEl !== targetCandidate) {
+        currentTargetEl.classList.remove("drag-over", "drag-locked");
+        currentTargetEl = null;
+      }
+
+      if (targetCandidate) {
+        const targetIdx = parseInt(targetCandidate.dataset.reg, 10);
+        if (!isNaN(targetIdx) && targetIdx !== regionIndex) {
+          currentTargetEl = targetCandidate;
+          if (state.regions[targetIdx].locked) {
+            currentTargetEl.classList.add("drag-locked");
+          } else {
+            currentTargetEl.classList.add("drag-over");
+          }
+        }
+      }
+    }
+  }, { passive: false });
+
+  const finishTouch = () => {
+    if (avatar) {
+      avatar.remove();
+      avatar = null;
+    }
+    if (currentTargetEl) {
+      currentTargetEl.classList.remove("drag-over", "drag-locked");
+      const targetIdx = parseInt(currentTargetEl.dataset.reg, 10);
+      if (!isNaN(targetIdx) && targetIdx !== regionIndex) {
+        if (state.regions[targetIdx].locked) {
+          showToast(`Region ${targetIdx} jest zablokowany kłódką 🔒 (brak możliwości zamiany)`);
+        } else {
+          swapRegionColors(regionIndex, targetIdx);
+        }
+      }
+      currentTargetEl = null;
+    }
+    document.body.classList.remove("is-color-dragging");
+    draggedRegionIndex = null;
+    touchStartPos = null;
+    setTimeout(() => {
+      isMoving = false;
+      isDraggingColor = false;
+    }, 120);
+  };
+
+  element.addEventListener("touchend", finishTouch);
+  element.addEventListener("touchcancel", finishTouch);
+}
+
+// Dołączanie zdarzeń Drag & Drop do kafelka w pasku podglądu
+function attachTileDragAndDrop(tile, reg) {
+  if (!reg.locked) {
+    tile.draggable = true;
+
+    tile.addEventListener("dragstart", (e) => {
+      isDraggingColor = true;
+      draggedRegionIndex = reg.regionIndex;
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", String(reg.regionIndex));
+      tile.classList.add("is-dragging");
+      document.body.classList.add("is-color-dragging");
+
+      // Ukryj domyślny cień przeglądarki i utwórz własną wizualizację trzymanego kafelka
+      if (e.dataTransfer.setDragImage) {
+        e.dataTransfer.setDragImage(transparentDragImg, 0, 0);
+      }
+      createFloatingBadge(reg, e.clientX, e.clientY);
+    });
+
+    tile.addEventListener("dragend", () => {
+      tile.classList.remove("is-dragging");
+      document.body.classList.remove("is-color-dragging");
+      document.querySelectorAll(".drag-over, .drag-locked").forEach(el => el.classList.remove("drag-over", "drag-locked"));
+      draggedRegionIndex = null;
+      removeFloatingBadge();
+      setTimeout(() => {
+        isDraggingColor = false;
+      }, 100);
+    });
+
+    setupTouchDrag(tile, reg.regionIndex, reg.color.hex);
+  } else {
+    tile.draggable = false;
+  }
+
+  tile.addEventListener("dragover", (e) => {
+    if (draggedRegionIndex !== null && draggedRegionIndex !== reg.regionIndex) {
+      e.preventDefault();
+      if (reg.locked) {
+        e.dataTransfer.dropEffect = "none";
+      } else {
+        e.dataTransfer.dropEffect = "move";
+      }
+    }
+  });
+
+  tile.addEventListener("dragenter", (e) => {
+    if (draggedRegionIndex !== null && draggedRegionIndex !== reg.regionIndex) {
+      if (reg.locked) {
+        tile.classList.add("drag-locked");
+      } else {
+        tile.classList.add("drag-over");
+      }
+    }
+  });
+
+  tile.addEventListener("dragleave", (e) => {
+    if (tile.contains(e.relatedTarget)) return;
+    tile.classList.remove("drag-over", "drag-locked");
+  });
+
+  tile.addEventListener("drop", (e) => {
+    e.preventDefault();
+    tile.classList.remove("drag-over", "drag-locked");
+    removeFloatingBadge();
+    if (reg.locked) {
+      showToast(`Region ${reg.regionIndex} jest zablokowany kłódką 🔒 (brak możliwości zamiany)`);
+      return;
+    }
+    const raw = e.dataTransfer.getData("text/plain");
+    const sourceIdx = draggedRegionIndex !== null ? draggedRegionIndex : parseInt(raw, 10);
+    if (!isNaN(sourceIdx) && sourceIdx !== reg.regionIndex) {
+      swapRegionColors(sourceIdx, reg.regionIndex);
+    }
+  });
+}
+
+// Dołączanie zdarzeń Drag & Drop do karty regionu i próbki koloru
+function attachCardDragAndDrop(card, swatch, reg) {
+  if (!reg.locked) {
+    swatch.draggable = true;
+
+    swatch.addEventListener("dragstart", (e) => {
+      isDraggingColor = true;
+      draggedRegionIndex = reg.regionIndex;
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", String(reg.regionIndex));
+      swatch.classList.add("is-dragging");
+      document.body.classList.add("is-color-dragging");
+
+      // Ukryj domyślny cień przeglądarki i utwórz własną wizualizację trzymanego kafelka
+      if (e.dataTransfer.setDragImage) {
+        e.dataTransfer.setDragImage(transparentDragImg, 0, 0);
+      }
+      createFloatingBadge(reg, e.clientX, e.clientY);
+    });
+
+    swatch.addEventListener("dragend", () => {
+      swatch.classList.remove("is-dragging");
+      document.body.classList.remove("is-color-dragging");
+      document.querySelectorAll(".drag-over, .drag-locked").forEach(el => el.classList.remove("drag-over", "drag-locked"));
+      draggedRegionIndex = null;
+      removeFloatingBadge();
+      setTimeout(() => {
+        isDraggingColor = false;
+      }, 100);
+    });
+
+    setupTouchDrag(swatch, reg.regionIndex, reg.color.hex);
+  } else {
+    swatch.draggable = false;
+  }
+
+  card.addEventListener("dragover", (e) => {
+    if (draggedRegionIndex !== null && draggedRegionIndex !== reg.regionIndex) {
+      e.preventDefault();
+      if (reg.locked) {
+        e.dataTransfer.dropEffect = "none";
+      } else {
+        e.dataTransfer.dropEffect = "move";
+      }
+    }
+  });
+
+  card.addEventListener("dragenter", (e) => {
+    if (draggedRegionIndex !== null && draggedRegionIndex !== reg.regionIndex) {
+      if (reg.locked) {
+        card.classList.add("drag-locked");
+      } else {
+        card.classList.add("drag-over");
+      }
+    }
+  });
+
+  card.addEventListener("dragleave", (e) => {
+    if (card.contains(e.relatedTarget)) return;
+    card.classList.remove("drag-over", "drag-locked");
+  });
+
+  card.addEventListener("drop", (e) => {
+    e.preventDefault();
+    card.classList.remove("drag-over", "drag-locked");
+    removeFloatingBadge();
+    if (reg.locked) {
+      showToast(`Region ${reg.regionIndex} jest zablokowany kłódką 🔒 (brak możliwości zamiany)`);
+      return;
+    }
+    const raw = e.dataTransfer.getData("text/plain");
+    const sourceIdx = draggedRegionIndex !== null ? draggedRegionIndex : parseInt(raw, 10);
+    if (!isNaN(sourceIdx) && sourceIdx !== reg.regionIndex) {
+      swapRegionColors(sourceIdx, reg.regionIndex);
+    }
+  });
+}
+
 // Renderowanie paska podglądu 6 regionów
 function renderPreviewBar() {
   const bar = document.getElementById("preview-bar");
@@ -121,8 +442,16 @@ function renderPreviewBar() {
 
   state.regions.forEach((reg) => {
     const tile = document.createElement("div");
-    tile.className = "preview-tile";
+    tile.className = `preview-tile ${reg.locked ? "is-locked" : ""}`;
+    tile.dataset.reg = reg.regionIndex;
     const lockIcon = reg.locked ? " 🔒" : "";
+
+    if (reg.locked) {
+      tile.title = `Region R${reg.regionIndex} (zablokowany kłódką 🔒) • Kliknij, aby wybrać kolor`;
+    } else {
+      tile.title = `Region R${reg.regionIndex}: ${reg.color.name} • Kliknij lub przeciągnij (Drag & Drop)`;
+    }
+
     if (reg.enabled) {
       tile.style.backgroundColor = reg.color.hex;
       const textCol = getContrastColor(reg.color.hex);
@@ -145,7 +474,15 @@ function renderPreviewBar() {
         <span class="tile-color-name">[Wyłączony]</span>
       `;
     }
-    tile.addEventListener("click", () => openColorModal(reg.regionIndex));
+
+    tile.addEventListener("click", () => {
+      if (isDraggingColor) return;
+      openColorModal(reg.regionIndex);
+    });
+
+    // Dołącz obsługę Drag & Drop
+    attachTileDragAndDrop(tile, reg);
+
     bar.appendChild(tile);
   });
 }
@@ -157,7 +494,12 @@ function renderRegionsGrid() {
 
   state.regions.forEach((reg) => {
     const card = document.createElement("div");
-    card.className = `region-card ${reg.enabled ? "" : "disabled"}`;
+    card.className = `region-card ${reg.enabled ? "" : "disabled"} ${reg.locked ? "is-locked" : ""}`;
+    card.dataset.reg = reg.regionIndex;
+
+    const swatchTitle = reg.locked
+      ? "Region zablokowany kłódką 🔒 (brak możliwości zamiany)"
+      : "Kliknij, aby wybrać kolor • Przeciągnij, aby zamienić miejscami (Drag & Drop)";
 
     card.innerHTML = `
       <div class="region-card-header">
@@ -166,7 +508,7 @@ function renderRegionsGrid() {
           <div class="region-title">Region ${reg.regionIndex}</div>
         </div>
         <div class="region-controls-group">
-          <button class="region-lock-btn ${reg.locked ? "locked" : ""}" data-reg="${reg.regionIndex}" title="${reg.locked ? "Region zablokowany przed losowaniem (kliknij, aby odblokować)" : "Zablokuj ten region przed losowaniem"}">
+          <button class="region-lock-btn ${reg.locked ? "locked" : ""}" data-reg="${reg.regionIndex}" title="${reg.locked ? "Region zablokowany przed losowaniem i zamianą (kliknij, aby odblokować)" : "Zablokuj ten region przed losowaniem i zamianą"}">
             ${reg.locked ? "🔒" : "🔓"}
           </button>
           <label class="region-toggle-label">
@@ -177,7 +519,7 @@ function renderRegionsGrid() {
       </div>
 
       <div class="region-card-body">
-        <div class="color-swatch-large" style="background-color: ${reg.color.hex}" title="Kliknij, aby zmienić kolor"></div>
+        <div class="color-swatch-large ${reg.locked ? "is-locked" : ""}" style="background-color: ${reg.color.hex}" title="${swatchTitle}" data-reg="${reg.regionIndex}"></div>
         <div class="region-info">
           <div class="color-info-name">${reg.color.name}</div>
           <div class="color-info-meta">
@@ -205,7 +547,10 @@ function renderRegionsGrid() {
     const idInput = card.querySelector(".region-id-input");
     const lockBtn = card.querySelector(".region-lock-btn");
 
-    swatch.addEventListener("click", () => openColorModal(reg.regionIndex));
+    swatch.addEventListener("click", () => {
+      if (isDraggingColor) return;
+      openColorModal(reg.regionIndex);
+    });
     pickBtn.addEventListener("click", () => openColorModal(reg.regionIndex));
     randBtn.addEventListener("click", () => randomizeSingle(reg.regionIndex));
     copyBtn.addEventListener("click", () => {
@@ -254,6 +599,9 @@ function renderRegionsGrid() {
     });
     idInput.addEventListener("change", handleIdChange);
 
+    // Dołącz obsługę Drag & Drop na karcie i próbce koloru
+    attachCardDragAndDrop(card, swatch, reg);
+
     grid.appendChild(card);
   });
 }
@@ -292,20 +640,35 @@ function updateCommands() {
   }
 }
 
-// Zbiorcza aktualizacja interfejsu
-function updateAll(skipRegionsGrid = false) {
-  renderPreviewBar();
-  if (!skipRegionsGrid) {
-    renderRegionsGrid();
-  }
-  updateCommands();
-}
+// Zamiana kolorów miejscami (Drag & Drop)
+function swapRegionColors(sourceIdx, targetIdx) {
+  if (sourceIdx === targetIdx) return;
+  const srcReg = state.regions[sourceIdx];
+  const tgtReg = state.regions[targetIdx];
+  if (!srcReg || !tgtReg) return;
 
-// Losowanie pojedynczego regionu
-function randomizeSingle(regionIdx) {
-  const randomColor = ARK_COLORS[Math.floor(Math.random() * ARK_COLORS.length)];
-  state.regions[regionIdx].color = randomColor;
-  updateAll();
+  // Odporne na przeciąganie zablokowane regiony
+  if (srcReg.locked) {
+    showToast(`Region ${sourceIdx} jest zablokowany kłódką 🔒 (brak możliwości zamiany)`);
+    return;
+  }
+  if (tgtReg.locked) {
+    showToast(`Region ${targetIdx} jest zablokowany kłódką 🔒 (brak możliwości zamiany)`);
+    return;
+  }
+
+  // Zamiana koloru
+  const tempColor = srcReg.color;
+  srcReg.color = tgtReg.color;
+  tgtReg.color = tempColor;
+
+  // Jeśli docelowy region był wyłączony, a źródłowy włączony – aktywujemy docelowy
+  if (!tgtReg.enabled && srcReg.enabled) {
+    tgtReg.enabled = true;
+  }
+
+  updateAll(true);
+  showToast(`Zamieniono kolory: Region ${sourceIdx} ⇄ Region ${targetIdx} 🔄`);
 }
 
 // Pamięć podręczna LocalStorage
